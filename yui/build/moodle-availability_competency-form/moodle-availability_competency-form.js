@@ -17,7 +17,7 @@ YUI.add('moodle-availability_competency-form', function(Y, NAME) {
         var strNo = M.util.get_string('no', 'availability_competency');
 
         var selectHtml = '<label><span class="pr-3">' + strCompetency + '</span> ' +
-                         '<select name="competencyid" class="custom-select">';
+                         '<select name="competencyid" class="form-select">';
         selectHtml += '<option value="0">' + M.util.get_string('choosedots', 'moodle') + '</option>';
         for (var i = 0; i < this.competencies.length; i++) {
             var competency = this.competencies[i];
@@ -26,7 +26,7 @@ YUI.add('moodle-availability_competency-form', function(Y, NAME) {
         selectHtml += '</select></label>';
 
         var proficientHtml = '<label><span class="pr-3 pl-3">' + strProficient + '</span> ' +
-                             '<select name="proficient" class="custom-select">' +
+                             '<select name="proficient" class="form-select">' +
                              '<option value="1">' + strYes + '</option>' +
                              '<option value="0">' + strNo + '</option>' +
                              '</select></label>';
