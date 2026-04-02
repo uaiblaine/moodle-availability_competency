@@ -24,7 +24,6 @@ namespace availability_competency;
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class frontend extends \core_availability\frontend {
-
     /**
      * Get javascript strings.
      * @return array
@@ -43,18 +42,18 @@ class frontend extends \core_availability\frontend {
      */
     protected function get_javascript_init_params($course, ?\cm_info $cm = null, ?\section_info $section = null) {
         global $DB;
-        
+
         $jsarray = [];
         $sql = "SELECT c.id, c.shortname
                   FROM {competency} c
                   JOIN {competency_coursecomp} cc ON c.id = cc.competencyid
                  WHERE cc.courseid = ?";
         $competencies = $DB->get_records_sql($sql, [$course->id]);
-        
+
         foreach ($competencies as $rec) {
             $jsarray[] = (object)[
                 'id' => $rec->id,
-                'name' => format_string($rec->shortname, true, ['context' => \context_course::instance($course->id)])
+                'name' => format_string($rec->shortname, true, ['context' => \context_course::instance($course->id)]),
             ];
         }
 

@@ -24,7 +24,7 @@ namespace availability_competency;
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class condition extends \core_availability\condition {
-    /** @var array Cache for competency shortnames */
+    /** @var array Cache for competency shortnames. */
     protected static $competencydesc = [];
 
     /** @var int ID of the competency that this condition requires */
@@ -59,7 +59,7 @@ class condition extends \core_availability\condition {
         return (object)[
             'type' => 'competency',
             'competencyid' => $this->competencyid,
-            'proficient' => $this->proficient
+            'proficient' => $this->proficient,
         ];
     }
 
@@ -74,11 +74,11 @@ class condition extends \core_availability\condition {
      */
     public function is_available($not, \core_availability\info $info, $grabthelot, $userid) {
         $course = $info->get_course();
-        
+
         $ucc = \core_competency\api::get_user_competency_in_course($course->id, $userid, $this->competencyid);
-        
+
         $isproficient = $ucc->get('proficiency') ? 1 : 0;
-        
+
         $allow = ($isproficient === $this->proficient);
 
         if ($not) {
@@ -108,9 +108,13 @@ class condition extends \core_availability\condition {
                 self::$competencydesc[$this->competencyid] = get_string('missing', 'availability_competency');
             }
         }
-        
-        $name = format_string(self::$competencydesc[$this->competencyid], true, ['context' => \context_course::instance($course->id)]);
-        
+
+        $name = format_string(
+            self::$competencydesc[$this->competencyid],
+            true,
+            ['context' => \context_course::instance($course->id)]
+        );
+
         $requireproficient = $this->proficient ? !$not : $not;
 
         if ($requireproficient) {
@@ -128,7 +132,7 @@ class condition extends \core_availability\condition {
     protected function get_debug_string() {
         return '#' . $this->competencyid . '-p' . $this->proficient;
     }
-    
+
     /**
      * Checks whether this availability condition should be included after restore.
      *
@@ -141,9 +145,9 @@ class condition extends \core_availability\condition {
      */
     public function include_after_restore($restoreid, $courseid, \base_logger $logger, $name, \base_task $task) {
         global $DB;
-        
+
         $restorecontroller = \restore_controller::load_controller($restoreid);
-        
+
         if ($restorecontroller->is_samesite()) {
             if ($DB->record_exists('competency_coursecomp', ['courseid' => $courseid, 'competencyid' => $this->competencyid])) {
                 return true;
@@ -151,7 +155,7 @@ class condition extends \core_availability\condition {
                 return false;
             }
         } else {
-             return false;
+            return false;
         }
     }
 }

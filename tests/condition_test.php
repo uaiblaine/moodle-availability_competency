@@ -24,29 +24,36 @@
 
 namespace availability_competency;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Unit tests for condition class.
  */
 class condition_test extends \basic_testcase {
-
     /**
      * Test that condition save method returns valid structure.
      */
     public function test_condition_save(): void {
-        $structure = (object)['type' => 'competency', 'id' => 1];
+        $structure = (object)[
+            'type' => 'competency',
+            'competencyid' => 1,
+            'proficient' => 1,
+        ];
         $condition = new condition($structure);
         $result = $condition->save();
         $this->assertIsObject($result);
         $this->assertObjectHasProperty('type', $result);
+        $this->assertObjectHasProperty('competencyid', $result);
+        $this->assertObjectHasProperty('proficient', $result);
     }
 
     /**
      * Test that get_debug_string method exists and returns string.
      */
     public function test_condition_debug_string(): void {
-        $structure = (object)['type' => 'competency', 'id' => 1];
+        $structure = (object)[
+            'type' => 'competency',
+            'competencyid' => 1,
+            'proficient' => 0,
+        ];
         $condition = new condition($structure);
         // Protected method, test via reflection.
         $reflection = new \ReflectionMethod($condition, 'get_debug_string');

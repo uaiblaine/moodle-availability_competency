@@ -24,29 +24,37 @@
 
 namespace availability_competency;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Unit tests for availability_competency.
  */
 class availability_competency_test extends \basic_testcase {
-
     /**
      * Test that condition class can be instantiated.
      */
     public function test_condition_instantiation(): void {
-        $structure = (object)['type' => 'competency'];
+        $structure = (object)[
+            'type' => 'competency',
+            'competencyid' => 1,
+            'proficient' => 1,
+        ];
         $condition = new condition($structure);
-        $this->assertIsObject($condition);
+        $this->assertInstanceOf(condition::class, $condition);
     }
 
     /**
-     * Test get_description method exists.
+     * Test save returns expected condition payload.
      */
-    public function test_condition_get_description(): void {
-        $structure = (object)['type' => 'competency'];
+    public function test_condition_save_payload(): void {
+        $structure = (object)[
+            'type' => 'competency',
+            'competencyid' => 42,
+            'proficient' => 0,
+        ];
         $condition = new condition($structure);
-        $description = $condition->get_description(false, false, null);
-        $this->assertIsString($description);
+        $saved = $condition->save();
+
+        $this->assertSame('competency', $saved->type);
+        $this->assertSame(42, $saved->competencyid);
+        $this->assertSame(0, $saved->proficient);
     }
 }
