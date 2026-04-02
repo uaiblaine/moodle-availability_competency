@@ -5,6 +5,19 @@ moodle-availability_competency
 
 An availability condition plugin for Moodle that restricts access to activities and course sections based on competency proficiency. Teachers can require students to have achieved a certain level of proficiency in one or more competencies before accessing an activity or section.
 
+If your teachers want to release activities, resources, or sections only to students who have reached specific competencies in a course, this plugin is for you.
+
+Take a look at an example:
+
+- The Moodle site tracks competencies for each training pathway.
+- Ana Teacher is an editing teacher in course A.
+- Ana would like to publish an advanced assignment only for students who have already demonstrated the competency “Problem Solving—Intermediate.”
+- With core Moodle conditions, she cannot directly gate that activity by competency proficiency.
+- With availability_competency, Ana can add a competency condition to the activity or section and require a target proficiency level.
+- Only students who meet that competency requirement get access.
+
+Important: the competencies used in restrictions must be linked to the course . If a competency is not associated with the course context, it cannot be used effectively by this availability condition.
+
 
 Requirements
 ------------
