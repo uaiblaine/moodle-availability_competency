@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ruleset name="moodle-availability_competency">
+    <description>PHP CodeSniffer rules for moodle-availability_competency plugin</description>
+
+    <!-- Import Moodle standard -->
+    <rule ref="vendor/squizlabs/php_codesniffer/src/Standards/PSR2">
+        <exclude name="PSR2.Files.EndFileNewline.NoneFound"/>
+    </rule>
+
+    <!-- Set ignore extensions -->
+    <arg name="extensions" value="php"/>
+
+    <!-- Ignore Moodle-standard directories -->
+    <exclude-pattern>vendor/</exclude-pattern>
+    <exclude-pattern>yui/build/</exclude-pattern>
+
+    <!-- Standard config for Moodle plugins -->
+    <arg name="tab-width" value="4"/>
+    <arg name="encoding" value="utf-8"/>
+
+    <!-- Show progress and warnings -->
+    <arg value="p"/>
+    <arg value="v"/>
+</ruleset>
