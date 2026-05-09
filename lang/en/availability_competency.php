@@ -32,3 +32,4 @@ $string['no'] = 'No';
 $string['requires_competency'] = 'You must be proficient in the competency: <strong>{$a}</strong>';
 $string['requires_not_competency'] = 'You must not be proficient in the competency: <strong>{$a}</strong>';
 $string['missing'] = '(Competency missing)';
+$string['privacy:metadata'] = 'The Restriction by competency plugin does not store any personal data.';

@@ -2,7 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
-## [Unreleased]
+## [1.0.1]
+
+- Add Privacy API support (null_provider — no personal data stored)
+- Refactor YUI form module: add GPL header, JSDoc, and Moodle code style
+- Add YUI module metadata file (yui/src/form/meta/form.json)
+
+## [1.0]
 
 - Initial stable release for Moodle 4.5 and 5.1
 - Competency-based availability restrictions for activities and sections

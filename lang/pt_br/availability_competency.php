@@ -32,3 +32,4 @@ $string['no'] = 'Não';
 $string['requires_competency'] = 'Você deve ser proficiente na competência: <strong>{$a}</strong>';
 $string['requires_not_competency'] = 'Você não deve ser proficiente na competência: <strong>{$a}</strong>';
 $string['missing'] = '(Competência ausente)';
+$string['privacy:metadata'] = 'O plugin Restrição por competência não armazena nenhum dado pessoal.';

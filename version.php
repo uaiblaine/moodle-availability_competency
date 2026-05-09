@@ -24,9 +24,9 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version = 2024100700;
+$plugin->version = 2024100701;
 $plugin->requires = 2024100700; // Moodle 4.5
 $plugin->component = 'availability_competency';
 $plugin->supported = [405, 502];
 $plugin->maturity = MATURITY_STABLE;
-$plugin->release = 'v1.0';
+$plugin->release = 'v1.0.1';

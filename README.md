@@ -22,7 +22,7 @@ Important: the competencies used in restrictions must be linked to the course . 
 Requirements
 ------------
 
-- Moodle 4.5 or later (tested up to Moodle 5.1)
+- Moodle 4.5 or later (tested up to Moodle 5.2)
 - Core competencies enabled (`tool_lp`)
 
 
