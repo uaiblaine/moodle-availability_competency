@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.0]
+
+- Bugfix (ported from moodle-an-hochschulen/moodle-availability_cohort): optionally remove orphaned
+  competency restrictions when a competency is deleted, so that affected activities and sections do
+  not stay hidden from everyone. Controlled by the new admin setting "Clean up restrictions on
+  competency deletion" (disabled by default).
+- Fix phpcs warnings (final test classes, coverage annotations, lang string ordering, inline comment)
+- Rebuild the YUI form module build files from source with the core grunt toolchain
+
 ## [1.0.1]
 
 - Add Privacy API support (null_provider — no personal data stored)

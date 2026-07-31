@@ -22,6 +22,8 @@
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+$string['cleanuponcompetencydeletion'] = 'Clean up restrictions on competency deletion';
+$string['cleanuponcompetencydeletion_desc'] = 'If enabled, all availability restrictions which require a particular competency are automatically removed from all activities and sections as soon as this competency is deleted. This prevents these activities and sections from staying hidden from everyone due to an orphaned restriction which can never be fulfilled anymore.<br />If disabled, the restrictions remain in place and are shown as \'{$a}\' instead.';
 $string['competency'] = 'Course competency';
 $string['description'] = 'Require proficiency in a specified competency.';
 $string['missing'] = '(Competency missing)';

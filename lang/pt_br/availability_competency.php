@@ -22,6 +22,8 @@
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+$string['cleanuponcompetencydeletion'] = 'Limpar restrições ao excluir competência';
+$string['cleanuponcompetencydeletion_desc'] = 'Se habilitado, todas as restrições de disponibilidade que exigem uma determinada competência são removidas automaticamente de todas as atividades e seções assim que essa competência é excluída. Isso evita que essas atividades e seções permaneçam ocultas para todos devido a uma restrição órfã que nunca mais poderá ser cumprida.<br />Se desabilitado, as restrições permanecem e são exibidas como \'{$a}\'.';
 $string['competency'] = 'Competência do curso';
 $string['description'] = 'Requer proficiência em uma competência específica.';
 $string['missing'] = '(Competência ausente)';

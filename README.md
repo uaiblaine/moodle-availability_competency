@@ -19,6 +19,18 @@ Take a look at an example:
 Important: the competencies used in restrictions must be linked to the course . If a competency is not associated with the course context, it cannot be used effectively by this availability condition.
 
 
+Settings
+--------
+
+To further configure the plugin and its behaviour, please visit: Site administration -> Plugins -> Availability restrictions -> Restriction by competency
+
+There, you find a setting section:
+
+### 1. Clean up restrictions on competency deletion
+
+With this setting, you can control whether the plugin automatically removes all availability restrictions which require a particular competency as soon as this competency is deleted. This prevents the affected activities and sections from staying hidden from everyone due to an orphaned restriction which can never be fulfilled anymore. As this cleanup changes existing availability restrictions in a way which can not be undone, it is disabled by default and has to be enabled explicitly on the plugin settings page. If it is disabled, an orphaned restriction remains in place and is shown as "(Competency missing)" instead.
+
+
 Requirements
 ------------
 

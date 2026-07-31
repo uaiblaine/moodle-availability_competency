@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Version info.
+ * Availability competency - Settings file
  *
  * @package availability_competency
  * @copyright 2026 Anderson Blaine (anderson@blaine.com.br)
@@ -24,9 +24,15 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version = 2024100702;
-$plugin->requires = 2024100700; // Moodle 4.5.
-$plugin->component = 'availability_competency';
-$plugin->supported = [405, 502];
-$plugin->maturity = MATURITY_STABLE;
-$plugin->release = 'v1.1.0';
+if ($ADMIN->fulltree) {
+    $settings->add(new admin_setting_configcheckbox(
+        'availability_competency/cleanuponcompetencydeletion',
+        new \core\lang_string('cleanuponcompetencydeletion', 'availability_competency'),
+        new \core\lang_string(
+            'cleanuponcompetencydeletion_desc',
+            'availability_competency',
+            new \core\lang_string('missing', 'availability_competency')
+        ),
+        0
+    ));
+}
