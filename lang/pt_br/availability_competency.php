@@ -22,14 +22,14 @@
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-$string['description'] = 'Requer proficiência em uma competência específica.';
-$string['pluginname'] = 'Restrição por competência';
-$string['title'] = 'Competência';
 $string['competency'] = 'Competência do curso';
-$string['proficient'] = 'Proficiente';
-$string['yes'] = 'Sim';
+$string['description'] = 'Requer proficiência em uma competência específica.';
+$string['missing'] = '(Competência ausente)';
 $string['no'] = 'Não';
+$string['pluginname'] = 'Restrição por competência';
+$string['privacy:metadata'] = 'O plugin Restrição por competência não armazena nenhum dado pessoal.';
+$string['proficient'] = 'Proficiente';
 $string['requires_competency'] = 'Você deve ser proficiente na competência: <strong>{$a}</strong>';
 $string['requires_not_competency'] = 'Você não deve ser proficiente na competência: <strong>{$a}</strong>';
-$string['missing'] = '(Competência ausente)';
-$string['privacy:metadata'] = 'O plugin Restrição por competência não armazena nenhum dado pessoal.';
+$string['title'] = 'Competência';
+$string['yes'] = 'Sim';

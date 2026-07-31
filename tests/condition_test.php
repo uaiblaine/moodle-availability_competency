@@ -26,8 +26,10 @@ namespace availability_competency;
 
 /**
  * Unit tests for condition class.
+ *
+ * @covers \availability_competency\condition
  */
-class condition_test extends \basic_testcase {
+final class condition_test extends \basic_testcase {
     /**
      * Test that condition save method returns valid structure.
      */

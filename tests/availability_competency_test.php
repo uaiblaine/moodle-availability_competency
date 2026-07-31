@@ -26,8 +26,10 @@ namespace availability_competency;
 
 /**
  * Unit tests for availability_competency.
+ *
+ * @covers \availability_competency\condition
  */
-class availability_competency_test extends \basic_testcase {
+final class availability_competency_test extends \basic_testcase {
     /**
      * Test that condition class can be instantiated.
      */
