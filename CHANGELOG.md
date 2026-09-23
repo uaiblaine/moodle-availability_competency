@@ -41,8 +41,9 @@ Recommended steps:
 - Feature: each condition now reads either the rating given in the course ("Yes – In this course",
   "No – In this course") or the learner's global proficiency ("Yes – Global", "No – Global"). The
   choice is stored as `scope` in the condition; conditions saved before this release carry no scope
-  and keep reading the course rating. Idea of evaluating the global proficiency from
-  ssystems-de/moodle-availability_competencies (ssystems GmbH).
+  and keep reading the course rating. The restriction text says "in this course" for the course
+  rating and nothing more for the global one ("You must be proficient in the competency X"). Idea of
+  evaluating the global proficiency from ssystems-de/moodle-availability_competencies (ssystems GmbH).
 - Bugfix: evaluating a restriction no longer goes through the competency API, which threw for guests,
   for roles without `moodle/competency:coursecompetencyview` and whenever competencies were disabled,
   breaking the whole course page. The stored ratings are read directly, which also stops a record being
@@ -99,8 +100,9 @@ Recommended steps:
 - Ratings read during a request are kept for at most a minute and a thousand entries, so a long-lived
   process such as a cron runner sees ratings given meanwhile in another process.
 - Tests: the condition is now tested against the database (scopes, unlinking, disabled competencies,
-  missing competencies, guests, capability overrides, restore, duplication), plus the frontend, a
-  Behat scenario for the form and a check of the form's Bootstrap class names. Wiping the static
+  missing competencies, guests, capability overrides, restore, duplication), plus the frontend, the
+  cleanup setting (off when never saved, registered disabled by default), Behat scenarios for the form
+  and a check of the form's Bootstrap class names. Wiping the static
   cache in setUp() and creating the backup_ids temporary table for the restore tests follow the tests
   of ssystems-de/moodle-availability_competencies (ssystems GmbH).
 

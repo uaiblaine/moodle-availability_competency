@@ -64,7 +64,8 @@ Feature: Restrict access by competency proficiency
     Then the field "Course competency" matches value "Leadership (not linked to this course)"
     And the field "Proficient" matches value "Yes – Global"
     And I press "Save and return to course"
-    And I should see "You must be proficient in the competency Leadership (global proficiency)"
+    And I should see "You must be proficient in the competency Leadership"
+    And I should not see "You must be proficient in the competency Leadership in this course"
 
   @javascript
   Scenario: A restriction saved before the scope option keeps reading the course rating

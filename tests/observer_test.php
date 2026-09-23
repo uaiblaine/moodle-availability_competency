@@ -224,6 +224,26 @@ final class observer_test extends \advanced_testcase {
     }
 
     /**
+     * Tests that the cleanup is off on a site where the setting was never saved.
+     */
+    public function test_cleanup_is_off_when_never_configured(): void {
+        unset_config('cleanuponcompetencydeletion', 'availability_competency');
+        $this->assertFalse(get_config('availability_competency', 'cleanuponcompetencydeletion'));
+
+        $generator = $this->getDataGenerator();
+        $course = $generator->create_course();
+        $page = $generator->create_module('page', ['course' => $course->id]);
+        $competency = $this->create_competency();
+        $structure = \core_availability\tree::get_root_json([$this->get_competency_json($competency)]);
+        $this->set_availability($page->cmid, $course->id, $structure);
+
+        \core_competency\api::delete_competency($competency);
+
+        $this->assertSame([], \core\task\manager::get_adhoc_tasks(task\remove_deleted_competency::class));
+        $this->assert_availability_unchanged($page->cmid, $structure);
+    }
+
+    /**
      * Tests that a task without a competency ID finishes without touching any restriction.
      *
      * @covers \availability_competency\task\remove_deleted_competency

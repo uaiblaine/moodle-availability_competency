@@ -23,7 +23,7 @@
  */
 
 $string['cleanuponcompetencydeletion'] = 'Limpar restrições ao excluir competência';
-$string['cleanuponcompetencydeletion_desc'] = 'Se habilitado, quando uma competência é excluída, as condições de restrição sobre ela que nunca mais poderão ser cumpridas são removidas de todas as atividades e seções logo depois, por uma tarefa em segundo plano. Isso evita que itens restritos a quem é proficiente na competência fiquem indisponíveis para sempre. As condições que a competência excluída agora sempre cumpre, como uma que exige que o aluno não seja proficiente, permanecem e são exibidas como \'{$a}\', porque removê-las poderia tornar um item indisponível. O log da tarefa guarda a restrição anterior de cada item alterado.<br />Se desabilitado, todas as restrições permanecem e são exibidas como \'{$a}\'; ninguém conta como proficiente numa competência excluída, então uma restrição que a exige continua fechada e uma que exige a sua ausência é sempre cumprida.';
+$string['cleanuponcompetencydeletion_desc'] = 'Ninguém pode ser proficiente numa competência excluída: uma condição que exige proficiência nela nunca mais será cumprida, e uma que exige não ser proficiente será sempre cumprida. Se habilitado, uma tarefa em segundo plano remove das atividades e seções as condições que nunca mais serão cumpridas, para que deixem de bloquear o acesso; as demais permanecem e são exibidas como \'{$a}\'. O log da tarefa guarda a restrição anterior de cada item alterado. Se desabilitado, nada é removido.';
 $string['competency'] = 'Competência do curso';
 $string['description'] = 'Requer proficiência em uma competência específica.';
 $string['error_selectcompetency'] = 'Selecione uma competência.';
@@ -37,8 +37,8 @@ $string['proficient'] = 'Proficiente';
 $string['proficient_course'] = 'Sim – Neste curso';
 $string['proficient_global'] = 'Sim – Global';
 $string['requires_competency'] = 'Você deve ser proficiente na competência <strong>{$a}</strong> neste curso';
-$string['requires_competency_global'] = 'Você deve ser proficiente na competência <strong>{$a}</strong> (proficiência global)';
+$string['requires_competency_global'] = 'Você deve ser proficiente na competência <strong>{$a}</strong>';
 $string['requires_not_competency'] = 'Você não deve ser proficiente na competência <strong>{$a}</strong> neste curso';
-$string['requires_not_competency_global'] = 'Você não deve ser proficiente na competência <strong>{$a}</strong> (proficiência global)';
+$string['requires_not_competency_global'] = 'Você não deve ser proficiente na competência <strong>{$a}</strong>';
 $string['task_remove_deleted_competency'] = 'Remover restrições de uma competência excluída';
 $string['title'] = 'Competência';
