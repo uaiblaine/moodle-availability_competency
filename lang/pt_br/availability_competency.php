@@ -23,15 +23,21 @@
  */
 
 $string['cleanuponcompetencydeletion'] = 'Limpar restrições ao excluir competência';
-$string['cleanuponcompetencydeletion_desc'] = 'Se habilitado, todas as restrições de disponibilidade que exigem uma determinada competência são removidas automaticamente de todas as atividades e seções assim que essa competência é excluída. Isso evita que essas atividades e seções permaneçam ocultas para todos devido a uma restrição órfã que nunca mais poderá ser cumprida.<br />Se desabilitado, as restrições permanecem e são exibidas como \'{$a}\'.';
+$string['cleanuponcompetencydeletion_desc'] = 'Se habilitado, todas as restrições de disponibilidade que citam uma determinada competência são removidas automaticamente de todas as atividades e seções assim que essa competência é excluída. Isso evita que atividades e seções restritas a quem é proficiente nela permaneçam ocultas para todos devido a uma restrição órfã que nunca mais poderá ser cumprida.<br />Se desabilitado, as restrições permanecem e são exibidas como \'{$a}\'; ninguém conta como proficiente numa competência excluída, então uma restrição que a exige continua fechada e uma que exige a sua ausência é sempre cumprida.';
 $string['competency'] = 'Competência do curso';
 $string['description'] = 'Requer proficiência em uma competência específica.';
+$string['error_selectcompetency'] = 'Selecione uma competência.';
 $string['missing'] = '(Competência ausente)';
-$string['no'] = 'Não';
+$string['notlinked'] = '{$a} (não vinculada a este curso)';
+$string['notproficient_course'] = 'Não – Neste curso';
+$string['notproficient_global'] = 'Não – Global';
 $string['pluginname'] = 'Restrição por competência';
 $string['privacy:metadata'] = 'O plugin Restrição por competência não armazena nenhum dado pessoal.';
 $string['proficient'] = 'Proficiente';
-$string['requires_competency'] = 'Você deve ser proficiente na competência: <strong>{$a}</strong>';
-$string['requires_not_competency'] = 'Você não deve ser proficiente na competência: <strong>{$a}</strong>';
+$string['proficient_course'] = 'Sim – Neste curso';
+$string['proficient_global'] = 'Sim – Global';
+$string['requires_competency'] = 'Você deve ser proficiente na competência <strong>{$a}</strong> neste curso';
+$string['requires_competency_global'] = 'Você deve ser proficiente na competência <strong>{$a}</strong> (proficiência global)';
+$string['requires_not_competency'] = 'Você não deve ser proficiente na competência <strong>{$a}</strong> neste curso';
+$string['requires_not_competency_global'] = 'Você não deve ser proficiente na competência <strong>{$a}</strong> (proficiência global)';
 $string['title'] = 'Competência';
-$string['yes'] = 'Sim';

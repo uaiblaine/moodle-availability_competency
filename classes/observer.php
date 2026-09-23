@@ -47,6 +47,21 @@ class observer {
     }
 
     /**
+     * Observer for the competency_evidence_created event.
+     *
+     * Adding evidence is how core writes every rating, in a course and site-wide alike, so the
+     * ratings the condition has read during this request are dropped to let a rating given earlier
+     * in the same request unlock the item straight away. Refreshing on this event follows
+     * availability_competencies by ssystems GmbH.
+     *
+     * @param \core\event\competency_evidence_created $event The competency_evidence_created event.
+     * @return void
+     */
+    public static function competency_evidence_created(\core\event\competency_evidence_created $event): void {
+        condition::wipe_static_cache();
+    }
+
+    /**
      * Removes every reference to the given competency from the availability restrictions of all course modules and
      * course sections on the site.
      *

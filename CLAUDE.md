@@ -80,16 +80,47 @@ yui/src, yui/build       the form-side widget — core's availability UI is YUI,
 tests/                   condition, observer and integration tests
 ```
 
-## Deviations from the fleet standard, recorded so they are not mistaken for a choice
+## Design decisions (owner, 2026-09-23)
 
-- **`ci.yml` calls the Catalyst reusable workflow**, not the moodle-an-hochschulen
-  one the fleet standardises on. That matters beyond consistency: Catalyst gates
-  every job behind an eligibility step that requires a pull request or a
-  **protected** branch, so a push to an ordinary branch here **runs nothing and
-  still reports success** (fleet `CLAUDE.md`, section 4). A green tick on a push
-  in this repo is evidence of nothing; verify with
-  `gh run view <id> --json jobs --jq '.jobs[].name'`, or locally with
-  `mdl ci ... --matrix`.
-- The workflow also carries a bare `on: [push, pull_request]`, without the branch
-  filter and `concurrency` block the fleet template now ships — every feature-branch
-  push pays for the pipeline twice.
+- **Linking the competency to the course is the authoring filter, not an evaluation gate.** The
+  form offers only linked competencies (a site can hold thousands, and core's course competency
+  picker decides which frameworks a course may use). Evaluation never checks the link, the
+  framework's context or whether competencies are enabled: a stored rating keeps counting after an
+  unlink or a course move, so learners already rated proficient keep access.
+- **Two scopes per condition**: `scope = course` reads `competency_usercompcourse`, `scope = global`
+  reads `competency_usercomp`. JSON without `scope` is read as `course` (conditions saved before
+  1.2.0).
+- **A competency that does not exist counts as not proficient**, so a "not proficient" condition on
+  it is met.
+- **Never call `\core_competency\api` getters from `is_available()`.** They check the current
+  user's capabilities and throw `required_capability_exception` / `moodle_exception`, which core's
+  `info::is_available()` does not catch (it only catches `coding_exception`), so the whole course
+  page breaks for guests, for category-level capability overrides and when competencies are
+  disabled. `get_user_competency_in_course()` also inserts a record on read.
+- **Credit ssystems-de/moodle-availability_competencies** (README "Credits", CHANGELOG, and a note at
+  the implementing code) for anything taken from it, ideas included — the owner's rule.
+
+## Verified correct in classes/observer.php — do not "fix"
+
+Checked against core on 4.5 and 5.2 (2026-09-23):
+
+- The `LIKE '%"competency"%'` prefilter only narrows candidates; removal is decided by
+  `type === 'competency'` and the ID, and it does not match other plugins' types (e.g. ssystems'
+  `competencies`).
+- `rebuild_course_cache($courseid, true)` after writing `availability` is what core's own restore
+  step does.
+- Core has no API that removes one condition from a stored tree (the removal normally happens in the
+  YUI form), so walking the JSON is the only way; `c` and `showc` are rebuilt by appending so that
+  they stay parallel and remain JSON arrays.
+
+## Rebuilding the YUI module
+
+`mdl grunt` refuses a plugin without `amd/src`, so run core's grunt directly (eslint at CI
+strictness, then shifter), and commit `yui/build` with the source change:
+
+```sh
+docker run --rm -v ~/dev/moodle-502:/app \
+  -v ~/dev/moodle-availability_competency:/app/public/availability/condition/competency \
+  -w /app node:22-bookworm bash -lc \
+  "npx --no-install grunt yui --root=public/availability/condition/competency --max-lint-warnings=0"
+```
