@@ -17,7 +17,7 @@
 namespace availability_competency;
 
 /**
- * Availability competency - Event observer class
+ * Observers of core competency events, registered in db/events.php.
  *
  * @package    availability_competency
  * @copyright 2026 Anderson Blaine (anderson@blaine.com.br)
@@ -25,52 +25,61 @@ namespace availability_competency;
  */
 class observer {
     /**
-     * Observer for the competency_deleted event.
+     * Queues the removal of the conditions on a deleted competency that can never be met again, if enabled.
      *
-     * When a competency is deleted, any availability restriction which requires this particular competency would
-     * otherwise become orphaned and permanently hide the affected activity or section from everyone. To avoid
-     * this, we remove the restriction which refers to the deleted competency from all availability trees on the
-     * site. Core fires this event once per removed competency, both when a single competency is deleted and when
-     * a whole framework is deleted, so both cases are covered here.
+     * Nobody counts as proficient in a deleted competency, so a condition requiring proficiency in it could
+     * never be met again ({@see self::remove_competency_from_tree()} has the exact rule). Core fires this event
+     * once per removed competency, after the deletion is committed, including the competency's descendants and
+     * every competency of a deleted framework. Each removal scans every activity and section of the site, so
+     * it runs in an ad hoc task rather than in the request that deleted the competency.
      *
      * @param \core\event\competency_deleted $event The competency_deleted event.
      * @return void
      */
     public static function competency_deleted(\core\event\competency_deleted $event): void {
-        /* The cleanup is an optional feature which is disabled by default. Only proceed if the admin has enabled
-           the corresponding kill switch on the plugin settings page. */
+        // The cleanup is opt-in; the setting defaults to off.
         if (!get_config('availability_competency', 'cleanuponcompetencydeletion')) {
             return;
         }
 
-        self::remove_competency_from_availability((int)$event->objectid);
+        $task = new task\remove_deleted_competency();
+        $task->set_custom_data(['competencyid' => (int)$event->objectid]);
+        \core\task\manager::queue_adhoc_task($task, true);
     }
 
     /**
-     * Removes every reference to the given competency from the availability restrictions of all course modules and
-     * course sections on the site.
+     * Observer for the competency_evidence_created event.
      *
-     * @param int $competencyid The ID of the deleted competency.
+     * Adding evidence is how core writes every rating, in a course and site-wide alike, so the
+     * ratings the condition has read during this request are dropped to let a rating given earlier
+     * in the same request unlock the item straight away. Refreshing on this event follows
+     * availability_competencies by ssystems GmbH.
+     *
+     * @param \core\event\competency_evidence_created $event The competency_evidence_created event.
      * @return void
      */
-    protected static function remove_competency_from_availability(int $competencyid): void {
-        global $CFG, $DB;
+    public static function competency_evidence_created(\core\event\competency_evidence_created $event): void {
+        condition::wipe_static_cache();
+    }
 
-        /* We need the course library for rebuild_course_cache(), which is not guaranteed to be loaded when a
-           competency is deleted (e.g. via CLI or webservice). */
-        require_once($CFG->dirroot . '/course/lib.php');
+    /**
+     * Removes the conditions on a deleted competency that can never be met again, in all course modules and sections.
+     *
+     * Run by {@see task\remove_deleted_competency}, which logs what this returns.
+     *
+     * @param int $competencyid The ID of the deleted competency.
+     * @return array One object per item changed: table ('course_modules' or 'course_sections'), id, courseid,
+     *     before (the previous availability JSON) and after (the new JSON, or null when no restriction is left).
+     */
+    public static function remove_competency_from_availability(int $competencyid): array {
+        global $DB;
 
-        // Remember the courses whose availability data we change, so that we can rebuild their caches afterwards.
-        $affectedcourses = [];
+        $changes = [];
 
-        // Start transaction.
         $transaction = $DB->start_delegated_transaction();
 
-        /* The availability restrictions are stored in the availability column of the course modules as well as of
-           the course sections. We narrow the candidates down with a simple LIKE filter and verify the actual
-           competency ID afterwards when we walk the availability tree. */
+        // The LIKE only narrows the candidates; the tree walk decides by condition type and competency ID.
         foreach (['course_modules', 'course_sections'] as $table) {
-            // Get the records which contain a 'competency' availability constraint.
             $select = $DB->sql_like('availability', '?');
             $recordset = $DB->get_recordset_select(
                 $table,
@@ -80,92 +89,81 @@ class observer {
                 'id, course AS courseid, availability'
             );
 
-            // Iterate over the findings.
             foreach ($recordset as $record) {
-                // Decode the conditions.
                 $tree = json_decode($record->availability);
 
-                // Skip records which do not hold a valid availability tree.
                 if ($tree === null || !isset($tree->c) || !is_array($tree->c)) {
                     continue;
                 }
 
-                // Remove the competency restriction from the tree and skip the record if nothing changed.
                 if (!self::remove_competency_from_tree($tree, $competencyid)) {
                     continue;
                 }
 
-                // If the tree does not hold any restriction anymore, store null instead of an empty tree.
+                // An item left without restrictions stores null, as \core_availability\info::update_after_restore() does.
                 if (empty($tree->c)) {
                     $newvalue = null;
                 } else {
                     $newvalue = json_encode($tree);
                 }
 
-                // Set the availability condition back in the DB.
                 $DB->set_field($table, 'availability', $newvalue, ['id' => $record->id]);
 
-                // And add the course to the list of affected courses.
-                $affectedcourses[$record->courseid] = true;
+                $changes[] = (object)[
+                    'table' => $table,
+                    'id' => (int)$record->id,
+                    'courseid' => (int)$record->courseid,
+                    'before' => $record->availability,
+                    'after' => $newvalue,
+                ];
             }
             $recordset->close();
         }
 
-        // Commit the transaction.
         $transaction->allow_commit();
 
-        // Rebuild the course caches of the affected courses so that the changed availability data takes effect.
-        foreach (array_keys($affectedcourses) as $courseid) {
+        // As after core's restore, clearing is enough: modinfo is rebuilt on its next read.
+        foreach (array_unique(array_column($changes, 'courseid')) as $courseid) {
             rebuild_course_cache($courseid, true);
         }
+
+        return $changes;
     }
 
     /**
-     * Recursively removes all conditions which require the given competency from an availability tree.
+     * Removes, in place, the conditions on the deleted competency that can never be met again.
      *
-     * Why we manipulate the tree ourselves:
-     * Moodle Core does not provide a function which removes a single condition from a stored availability tree.
-     * In the regular editing workflow, the removal of a condition happens entirely client-side in the availability
-     * JavaScript: the browser rebuilds the complete tree and submits it, and the server just stores it as-is. The
-     * only related Core helper merely remaps an ID (old to new, e.g. during restore) but cannot remove a node. As
-     * we react to a competency deletion completely server-side (without any form or JavaScript), we therefore have
-     * to reproduce the client-side removal here ourselves.
+     * Nobody counts as proficient in a deleted competency, so each condition on it now has a fixed result: a
+     * "proficient" condition always fails and a "not proficient" one always passes, each inverted under a negated
+     * operator ('!&' or '!|') on its path, which core pushes down to the children
+     * ({@see \core_availability\tree::get_logic_flags()}). Only the conditions that always fail are removed.
+     * AND and OR only grow when a failing child goes, so no item ever loses access: under AND the item opens,
+     * which is the purpose of the setting, and under OR nothing changes. Conditions that always pass stay, as
+     * removing them could close an item. A nested subtree emptied this way is dropped, being a failing child
+     * itself; one that was already empty counts as met and is left alone.
      *
-     * How an availability tree looks:
-     * An availability tree is a nested structure of tree nodes and leaf conditions. A tree node holds its children
-     * in the c property and an operator in op (e.g. '&' for AND). For AND-type nodes (op '&' and '!|') there is a
-     * parallel showc array which holds the 'display' flag for each child. It must be kept in sync with the c array
-     * whenever we remove a child. A leaf condition is identified by its type property. A competency condition
-     * additionally holds the required competency in its competencyid property.
+     * Core has no API that removes one condition from a stored tree: the availability form rebuilds the whole
+     * tree in the browser, and {@see \core_availability\info::update_dependency_id_across_course()} only remaps
+     * IDs. Only a root tree with op '&' or '!|' carries showc, one flag per child of c, and it is kept parallel to c.
      *
-     * The passed tree node is modified in place. Nested subtrees which become empty are dropped as well.
+     * The result is then checked by verify_competency_removal(). If that fails, which would be a bug, the
+     * tree is reported as unchanged so that the caller does not write it back.
      *
-     * After the manipulation, a safety check verifies that we really only removed the conditions which required
-     * the deleted competency and left everything else untouched. If this check fails (which must never happen),
-     * the tree is reported as unchanged so that the potentially broken result is not written back to the database.
-     *
-     * @param \stdClass $tree The (sub)tree node to process, holding a list of children in its c property.
+     * @param \stdClass $tree The root tree, holding a list of children in its c property.
      * @param int $competencyid The ID of the deleted competency.
      * @return bool True if the tree was changed (and verified), false otherwise.
      */
     protected static function remove_competency_from_tree(\stdClass $tree, int $competencyid): bool {
-        /* Keep a pristine deep copy of the original tree so that we can verify our manipulation afterwards. We
-           must not use clone here: clone would only create a shallow copy whose nested child objects are shared
-           with the tree, so the in-place manipulation below would also alter the copy. A JSON round-trip is a
-           simple and safe way to deep-clone these plain data objects. */
+        // A deep copy for the check: clone would share the child objects that the removal changes in place.
         $original = json_decode(json_encode($tree));
 
-        // Perform the actual removal (recursively, modifying the tree in place).
-        $changed = self::remove_competency_from_tree_recursive($tree, $competencyid);
+        // Core evaluates the root with $not = false.
+        $changed = self::remove_competency_from_tree_recursive($tree, $competencyid, false);
 
-        // If nothing was changed, there is nothing to verify and nothing to write back.
         if (!$changed) {
             return false;
         }
 
-        /* Safety check: verify that we really only removed the deleted competency's conditions and left everything
-           else intact. If the verification fails, we must not persist the result, so we report the tree as
-           unchanged. */
         if (!self::verify_competency_removal($original, $tree, $competencyid)) {
             debugging(
                 'The availability tree manipulation after the deletion of competency ' . $competencyid
@@ -180,61 +178,43 @@ class observer {
     }
 
     /**
-     * Recursively removes all conditions which require the given competency from an availability tree.
-     *
-     * This is the actual worker of remove_competency_from_tree(). It modifies the passed tree node in place, drops
-     * nested subtrees which become empty and keeps the parallel showc array of each node in sync with its children.
+     * Recursive worker of remove_competency_from_tree(), which describes the rules it applies.
      *
      * @param \stdClass $tree The (sub)tree node to process, holding a list of children in its c property.
      * @param int $competencyid The ID of the deleted competency.
+     * @param bool $not The negation core passes to this node, true when an odd number of negated operators lie above it.
      * @return bool True if the tree was changed, false otherwise.
      */
-    protected static function remove_competency_from_tree_recursive(\stdClass $tree, int $competencyid): bool {
-        // If the node does not hold a valid list of children, there is nothing to process, so return directly.
+    protected static function remove_competency_from_tree_recursive(\stdClass $tree, int $competencyid, bool $not): bool {
         if (!isset($tree->c) || !is_array($tree->c)) {
             return false;
         }
 
-        /* The showc array only exists for AND-type nodes and is parallel to the c array, so we have to keep it in
-           sync with the children whenever we remove a child below. */
+        $childnot = self::is_negated($tree) ? !$not : $not;
         $haveshowc = isset($tree->showc) && is_array($tree->showc);
 
-        /* We rebuild the list of children (and, if present, the parallel showc array) from scratch, keeping only
-           the children which should remain, and remember whether we actually dropped anything. */
+        // Rebuilt by appending rather than with unset(), so that c and showc stay parallel and still encode as JSON arrays.
         $changed = false;
         $newchildren = [];
         $newshowc = [];
         foreach ($tree->c as $index => $child) {
             if (isset($child->c)) {
-                // The child is a nested subtree, so we recurse into it.
-                if (self::remove_competency_from_tree_recursive($child, $competencyid)) {
+                if (self::remove_competency_from_tree_recursive($child, $competencyid, $childnot)) {
                     $changed = true;
+                    if (empty($child->c)) {
+                        continue;
+                    }
                 }
-                // If the nested subtree does not hold any restriction anymore, we drop it completely.
-                if (empty($child->c)) {
-                    $changed = true;
-                    continue;
-                }
-                $newchildren[] = $child;
-                if ($haveshowc) {
-                    $newshowc[] = $tree->showc[$index];
-                }
-            } else if (
-                isset($child->type) && $child->type === 'competency'
-                    && isset($child->competencyid) && (int)$child->competencyid === $competencyid
-            ) {
-                // The child is a condition which requires the deleted competency, so we drop it.
+            } else if (self::is_unmeetable($child, $competencyid, $childnot)) {
                 $changed = true;
-            } else {
-                // The child is any other condition, so we keep it.
-                $newchildren[] = $child;
-                if ($haveshowc) {
-                    $newshowc[] = $tree->showc[$index];
-                }
+                continue;
+            }
+            $newchildren[] = $child;
+            if ($haveshowc) {
+                $newshowc[] = $tree->showc[$index];
             }
         }
 
-        // Only write the rebuilt children back if we actually changed something, keeping untouched trees identical.
         if ($changed) {
             $tree->c = $newchildren;
             if ($haveshowc) {
@@ -246,14 +226,42 @@ class observer {
     }
 
     /**
-     * Verifies that the availability tree manipulation only removed the conditions which required the deleted
-     * competency and left everything else untouched.
+     * Whether a tree's operator negates its children, as '!&' (not all of) and '!|' (none of) do.
      *
-     * This is a defensive guard against bugs in remove_competency_from_tree_recursive() and unexpected glitches in
-     * the availability data. It compares the pristine original tree with the manipulated result and checks that:
-     * - the result does not require the deleted competency anymore,
-     * - every other condition of the original tree is still present (and no new condition appeared),
-     * - the parallel showc array of each node still matches the number of that node's children.
+     * @param \stdClass $tree The (sub)tree node.
+     * @return bool
+     */
+    protected static function is_negated(\stdClass $tree): bool {
+        return isset($tree->op) && ($tree->op === '!&' || $tree->op === '!|');
+    }
+
+    /**
+     * Whether a leaf is a condition on the deleted competency that always fails.
+     *
+     * The competency counts as not held, so the condition always fails when it requires proficiency and is
+     * evaluated as is, or requires its absence and is evaluated negated.
+     *
+     * @param \stdClass $leaf A leaf of the tree.
+     * @param int $competencyid The ID of the deleted competency.
+     * @param bool $not The negation core passes to this leaf.
+     * @return bool
+     */
+    protected static function is_unmeetable(\stdClass $leaf, int $competencyid, bool $not): bool {
+        if (!isset($leaf->type) || $leaf->type !== 'competency') {
+            return false;
+        }
+        if (!isset($leaf->competencyid) || (int)$leaf->competencyid !== $competencyid) {
+            return false;
+        }
+        return !empty($leaf->proficient) !== $not;
+    }
+
+    /**
+     * Whether the edit removed exactly the conditions that always fail and nothing else.
+     *
+     * Checks that no condition on the competency that always fails is left, that every other condition of the
+     * original (those on the competency that always pass included) is still there and nothing was added, and
+     * that every showc still has one flag per child.
      *
      * @param \stdClass $original The pristine original tree.
      * @param \stdClass $result The manipulated tree.
@@ -261,32 +269,25 @@ class observer {
      * @return bool True if the manipulation is verified to be correct, false otherwise.
      */
     protected static function verify_competency_removal(\stdClass $original, \stdClass $result, int $competencyid): bool {
-        /* Collect the leaf conditions of the original tree, separated into the ones which require the deleted
-           competency and all other conditions. */
-        $originalcompetencyleaves = [];
-        $originalotherleaves = [];
-        self::collect_leaves($original, $competencyid, $originalcompetencyleaves, $originalotherleaves);
+        $originalunmeetable = [];
+        $originalkept = [];
+        self::collect_leaves($original, $competencyid, false, $originalunmeetable, $originalkept);
 
-        // Collect the leaf conditions of the manipulated tree in the same way.
-        $resultcompetencyleaves = [];
-        $resultotherleaves = [];
-        self::collect_leaves($result, $competencyid, $resultcompetencyleaves, $resultotherleaves);
+        $resultunmeetable = [];
+        $resultkept = [];
+        self::collect_leaves($result, $competencyid, false, $resultunmeetable, $resultkept);
 
-        // The manipulated tree must not require the deleted competency anymore.
-        if (!empty($resultcompetencyleaves)) {
+        if (!empty($resultunmeetable)) {
             return false;
         }
 
-        /* The manipulated tree must hold exactly the same other conditions as the original tree (none lost, none
-           added). We sort both lists before comparing them because the manipulation might change the order of the
-           conditions. */
-        sort($originalotherleaves);
-        sort($resultotherleaves);
-        if ($originalotherleaves !== $resultotherleaves) {
+        // Sorted: the check is about which conditions survive, not their order.
+        sort($originalkept);
+        sort($resultkept);
+        if ($originalkept !== $resultkept) {
             return false;
         }
 
-        // The showc array of each node must still match the number of that node's children.
         if (!self::verify_showc_integrity($result)) {
             return false;
         }
@@ -295,38 +296,33 @@ class observer {
     }
 
     /**
-     * Recursively collects the leaf conditions of an availability tree into two lists: the conditions which
-     * require the given competency and all other conditions. Each leaf condition is added as its JSON
-     * representation.
+     * Collects the leaf conditions of a tree as JSON strings: those on the competency that always fail, and all others.
      *
      * @param \stdClass $tree The (sub)tree node to process.
      * @param int $competencyid The ID of the deleted competency.
-     * @param array $competencyleaves The list collecting the conditions requiring the deleted competency (by reference).
-     * @param array $otherleaves The list which collects all other conditions (by reference).
+     * @param bool $not The negation core passes to this node.
+     * @param array $unmeetable Collects the conditions on the competency that always fail (by reference).
+     * @param array $kept Collects every other condition (by reference).
      * @return void
      */
     protected static function collect_leaves(
         \stdClass $tree,
         int $competencyid,
-        array &$competencyleaves,
-        array &$otherleaves
+        bool $not,
+        array &$unmeetable,
+        array &$kept
     ): void {
         if (!isset($tree->c) || !is_array($tree->c)) {
             return;
         }
+        $childnot = self::is_negated($tree) ? !$not : $not;
         foreach ($tree->c as $child) {
             if (isset($child->c)) {
-                // The child is a nested subtree, so we recurse into it.
-                self::collect_leaves($child, $competencyid, $competencyleaves, $otherleaves);
-            } else if (
-                isset($child->type) && $child->type === 'competency'
-                    && isset($child->competencyid) && (int)$child->competencyid === $competencyid
-            ) {
-                // The child is a condition which requires the deleted competency.
-                $competencyleaves[] = json_encode($child);
+                self::collect_leaves($child, $competencyid, $childnot, $unmeetable, $kept);
+            } else if (self::is_unmeetable($child, $competencyid, $childnot)) {
+                $unmeetable[] = json_encode($child);
             } else {
-                // The child is any other condition.
-                $otherleaves[] = json_encode($child);
+                $kept[] = json_encode($child);
             }
         }
     }

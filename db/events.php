@@ -29,4 +29,8 @@ $observers = [
         'eventname' => '\core\event\competency_deleted',
         'callback' => '\availability_competency\observer::competency_deleted',
     ],
+    [
+        'eventname' => '\core\event\competency_evidence_created',
+        'callback' => '\availability_competency\observer::competency_evidence_created',
+    ],
 ];
