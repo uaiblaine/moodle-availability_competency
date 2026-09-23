@@ -57,6 +57,78 @@ A read-only command line report lists the restrictions by competency, in every a
     php availability/condition/competency/cli/report_conditions.php --help
 
 
+Frequently asked questions
+--------------------------
+
+### What is the difference between "In this course" and "Global"?
+
+Moodle keeps two ratings for each learner and competency. The **course rating** belongs to one course: it is what the course's Competencies page and the competency breakdown report show. The **global rating** is the learner's site-wide proficiency: it is what learning plans show. "In this course" reads the course rating of the course the restricted activity or section belongs to; "Global" reads the global rating, wherever it came from.
+
+### How does a learner get a rating in this course?
+
+Only through something that happens in this course:
+
+- an activity linked to the competency whose "Upon activity completion" rule is "Complete the competency", once the learner completes the activity;
+- the course's "Upon course completion" rule set to "Complete the competency", once the learner completes the course;
+- a teacher using "Rate" on the learner's competency page in the course, or in the competency breakdown report;
+- restoring the course with user data.
+
+"Attach evidence" and "Send for review" do not rate. Neither do learning plans, evidence of prior learning or rules on parent competencies: they only change the global rating.
+
+"Complete the competency" gives the **default rating** of the competency's scale. If that rating is not marked as proficient in the scale configuration, completing gives a rating that is not proficient and an "In this course" restriction stays closed.
+
+### The learning plan says the competency is achieved, but the restriction stays closed. Why?
+
+The learning plan shows the global rating, which may come from another course, a plan review or evidence of prior learning, before or after anything happened in this course. An "In this course" restriction only looks at the rating given in this course, which the learner may not have yet. On the course's Competencies page such a competency has no rating badge, and on the learner's competency page in the course it reads "Proficient: No, Rating: -". The restriction text says "in this course" for this reason.
+
+If a rating from anywhere should be enough, use "Global", or combine "Yes – In this course" and "Yes – Global" in a restriction set that requires any of them.
+
+### What does "Override existing competency grade when completed." change?
+
+The option belongs to an activity's "Complete the competency" rule, and it only matters when a rating **already exists**:
+
+- Without it, completing the activity rates the competency in the course only when the learner has no course rating yet, even if they are already proficient globally, and it leaves an existing global rating unchanged.
+- With it, completing the activity always rewrites the course rating with the default rating and, if the course pushes its ratings to learning plans, the global rating too. That can lower a higher rating given by a teacher.
+
+The course's "Upon course completion" rule has no such option: it never replaces an existing rating.
+
+### A learner is stuck: rated not proficient in the course, and completing activities changes nothing. What can be done?
+
+That is the expected result of an existing course rating plus rules without the override option. A teacher can rate the learner again with "Rate", or the override option can be enabled on an activity the learner then completes. Completions that already happened are not replayed when the rule changes later.
+
+### Does "Push course ratings to individual learning plans" matter?
+
+For "Global" restrictions, yes. When a course pushes its ratings, completing a competency or a teacher's rating in that course also updates the global rating, unless the learner already had one and no override applies. A teacher's "Rate" always overwrites the global rating when the course pushes, so it can close "Global" restrictions in other courses. The course's Competencies page says whether the course pushes its ratings.
+
+### What happens after a course reset?
+
+The course reset option "Competency ratings" deletes the course ratings of that course and nothing else. "In this course" restrictions close again for everyone, while learning plans still show the competencies as achieved. Leave the option unticked when a course reuses its learners and relies on these restrictions.
+
+### Why must a competency be linked to the course to be chosen?
+
+A site can hold thousands of competencies: the list of the course's competencies is what the restriction form offers, and core's course competency picker decides which frameworks a course may use (those of the course's category and its parents). Once a restriction is saved, the link is not checked again.
+
+### What happens when a competency is unlinked, the course is moved, or competencies are disabled?
+
+Ratings keep counting. None of these removes a rating, so a learner who was rated proficient keeps access. A learner who was not rated yet can only be rated again in the course once the competency is linked again. Editing the activity keeps the competency, shown as "(not linked to this course)".
+
+### What happens when a competency is deleted?
+
+Nobody counts as proficient in it, so a restriction requiring proficiency stays closed and one requiring its absence is met; both are shown with "(Competency missing)". With the setting "Clean up restrictions on competency deletion" enabled, a background task removes the conditions that can never be met again and logs each item's previous restriction.
+
+### What happens on backup and restore, import or duplication?
+
+The restriction is kept. When the backup includes the course's competencies, the competency is found by its framework and ID number; within the same site the competency stays as it is. On another site without a matching competency, the restriction points at no competency and the restore log says so.
+
+### Can a teacher learn a learner's global proficiency through a "Global" restriction?
+
+Indirectly, yes: whoever can see which learners have access to the item can infer it, although by default only managers can view global ratings directly. Keep this in mind before using "Global".
+
+### Can a site running version 1.0.x or 1.1.0 use a backup containing "Global" restrictions?
+
+Those versions ignore the scope and read such a restriction as "In this course". Upgrade every site that exchanges course backups together; see the upgrade notes in CHANGELOG.md.
+
+
 Capabilities
 ------------
 

@@ -4,6 +4,40 @@ All notable changes to this project will be documented in this file.
 
 ## [1.2.0]
 
+### Upgrading from 1.0.x or 1.1.0
+
+The upgrade changes no stored data: restrictions saved by earlier versions have no scope and keep
+reading the course rating, and the form shows them as "Yes – In this course" or "No – In this course".
+Some restrictions do evaluate differently, and a few open to learners who did not have access before:
+
+- A restriction on a competency no longer linked to the course was closed for everyone; it now
+  follows the ratings, so learners rated proficient in the course get access.
+- A restriction requiring **not** to be proficient in a competency that was deleted, or that names no
+  competency (the form of earlier versions could save a restriction without one when its competency
+  had been unlinked), was closed for everyone; it is now met by everyone.
+- Pages that failed for guests, for roles without `moodle/competency:coursecompetencyview` and while
+  competencies were disabled now load and evaluate the restrictions.
+- Restoring, importing or duplicating now keeps competency restrictions instead of dropping them,
+  which opened the item to everyone.
+
+Recommended steps:
+
+1. Back up the database; the plugin cannot be downgraded otherwise.
+2. Keep a copy of the current restrictions, the only way to recover a competency the old form already
+   lost, for example `SELECT id, course, availability FROM mdl_course_modules WHERE availability LIKE
+   '%"type":"competency"%'` and the same on `mdl_course_sections` (adjust the table prefix).
+3. Upgrade every site that exchanges course backups at the same time: earlier versions read a
+   "Global" restriction as "In this course".
+4. Upgrade in maintenance mode and run
+   `php availability/condition/competency/cli/report_conditions.php` (under `public/` on Moodle 5.1
+   and later). Review each restriction it lists as `nocompetency`, `missing` or `notlinked`, for
+   example by choosing its competency again or linking the competency to the course, before leaving
+   maintenance mode.
+5. Decide whether to enable "Clean up restrictions on competency deletion" on the upgrade settings
+   page. It stays disabled unless enabled, and deletions made before the upgrade are not revisited.
+
+### Changes
+
 - Feature: each condition now reads either the rating given in the course ("Yes – In this course",
   "No – In this course") or the learner's global proficiency ("Yes – Global", "No – Global"). The
   choice is stored as `scope` in the condition; conditions saved before this release carry no scope
