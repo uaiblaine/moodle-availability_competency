@@ -23,7 +23,7 @@
  */
 
 $string['cleanuponcompetencydeletion'] = 'Clean up restrictions on competency deletion';
-$string['cleanuponcompetencydeletion_desc'] = 'If enabled, when a competency is deleted, the restriction conditions on it that can never be met again are removed from all activities and sections shortly after, by a background task. This stops items restricted to learners proficient in the competency from staying unavailable forever. Conditions that the deleted competency now always meets, such as one requiring the learner not to be proficient, stay in place and are shown as \'{$a}\', because removing them could make an item unavailable. The task\'s log keeps the previous restriction of every item it changes.<br />If disabled, all restrictions stay in place and are shown as \'{$a}\'; nobody counts as proficient in a deleted competency, so a restriction requiring it stays closed and one requiring its absence is always met.';
+$string['cleanuponcompetencydeletion_desc'] = 'Nobody can be proficient in a deleted competency: a condition requiring proficiency in it can never be met again, while one requiring the learner not to be proficient is always met. If enabled, a background task removes the conditions that can never be met from all activities and sections, so that they no longer block access; the others stay and are shown as \'{$a}\'. The task\'s log keeps the previous restriction of each item it changes. If disabled, nothing is removed.';
 $string['competency'] = 'Course competency';
 $string['description'] = 'Require proficiency in a specified competency.';
 $string['error_selectcompetency'] = 'Select a competency.';
@@ -37,8 +37,8 @@ $string['proficient'] = 'Proficient';
 $string['proficient_course'] = 'Yes – In this course';
 $string['proficient_global'] = 'Yes – Global';
 $string['requires_competency'] = 'You must be proficient in the competency <strong>{$a}</strong> in this course';
-$string['requires_competency_global'] = 'You must be proficient in the competency <strong>{$a}</strong> (global proficiency)';
+$string['requires_competency_global'] = 'You must be proficient in the competency <strong>{$a}</strong>';
 $string['requires_not_competency'] = 'You must not be proficient in the competency <strong>{$a}</strong> in this course';
-$string['requires_not_competency_global'] = 'You must not be proficient in the competency <strong>{$a}</strong> (global proficiency)';
+$string['requires_not_competency_global'] = 'You must not be proficient in the competency <strong>{$a}</strong>';
 $string['task_remove_deleted_competency'] = 'Remove restrictions on a deleted competency';
 $string['title'] = 'Competency';
