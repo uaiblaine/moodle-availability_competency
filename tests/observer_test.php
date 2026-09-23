@@ -27,6 +27,9 @@ namespace availability_competency;
 /**
  * Unit tests for the event observer.
  *
+ * Coverage is declared in this docblock rather than with a CoversClass attribute because the
+ * plugin still supports Moodle 4.5, whose moodle-cs cannot see PHP attributes.
+ *
  * @covers \availability_competency\observer
  */
 final class observer_test extends \advanced_testcase {
@@ -48,7 +51,7 @@ final class observer_test extends \advanced_testcase {
     }
 
     /**
-     * Data provider which runs each test once with the cleanup kill switch enabled and once with it disabled.
+     * Data provider which runs each test once with the cleanup setting enabled and once with it disabled.
      *
      * @return array
      */
@@ -63,23 +66,19 @@ final class observer_test extends \advanced_testcase {
      * Tests that a restriction which only requires the deleted competency is removed (if the cleanup is enabled).
      *
      * @dataProvider cleanup_enabled_provider
-     * @param bool $cleanupenabled Whether the cleanup kill switch is enabled.
+     * @param bool $cleanupenabled Whether the cleanup setting is enabled.
      */
     public function test_only_competency_condition_is_removed(bool $cleanupenabled): void {
-        // Set the kill switch.
         $this->set_cleanup($cleanupenabled);
 
-        // Create the necessary data assets.
         $generator = $this->getDataGenerator();
         $course = $generator->create_course();
         $page = $generator->create_module('page', ['course' => $course->id]);
         $competency = $this->create_competency();
 
-        // Restrict the activity to the competency only.
         $structure = \core_availability\tree::get_root_json([$this->get_competency_json($competency)]);
         $this->set_availability($page->cmid, $course->id, $structure);
 
-        // Delete the competency.
         \core_competency\api::delete_competency($competency);
 
         if ($cleanupenabled) {
@@ -92,22 +91,20 @@ final class observer_test extends \advanced_testcase {
     }
 
     /**
-     * Tests that only the competency condition is removed while other conditions and the showc array are kept.
+     * Tests that only the competency condition is removed, keeping the other conditions and their showc entries.
      *
      * @dataProvider cleanup_enabled_provider
-     * @param bool $cleanupenabled Whether the cleanup kill switch is enabled.
+     * @param bool $cleanupenabled Whether the cleanup setting is enabled.
      */
     public function test_competency_condition_is_removed_but_others_are_kept(bool $cleanupenabled): void {
-        // Set the kill switch.
         $this->set_cleanup($cleanupenabled);
 
-        // Create the necessary data assets.
         $generator = $this->getDataGenerator();
         $course = $generator->create_course();
         $page = $generator->create_module('page', ['course' => $course->id]);
         $competency = $this->create_competency();
 
-        // Restrict the activity to the competency AND a date, using an explicit (asymmetric) showc array.
+        // The showc flags differ, so keeping the removed condition's flag instead of the date's is caught.
         $datecondition = \availability_date\condition::get_json('>=', time());
         $structure = \core_availability\tree::get_root_json(
             [$this->get_competency_json($competency), $datecondition],
@@ -116,7 +113,6 @@ final class observer_test extends \advanced_testcase {
         );
         $this->set_availability($page->cmid, $course->id, $structure);
 
-        // Delete the competency.
         \core_competency\api::delete_competency($competency);
 
         if ($cleanupenabled) {
@@ -136,28 +132,23 @@ final class observer_test extends \advanced_testcase {
      * Tests that a restriction referring to a different competency is left untouched.
      *
      * @dataProvider cleanup_enabled_provider
-     * @param bool $cleanupenabled Whether the cleanup kill switch is enabled.
+     * @param bool $cleanupenabled Whether the cleanup setting is enabled.
      */
     public function test_unrelated_conditions_are_untouched(bool $cleanupenabled): void {
-        // Set the kill switch.
         $this->set_cleanup($cleanupenabled);
 
-        // Create the necessary data assets.
         $generator = $this->getDataGenerator();
         $course = $generator->create_course();
         $page = $generator->create_module('page', ['course' => $course->id]);
         $competency = $this->create_competency();
         $othercompetency = $this->create_competency();
 
-        // Restrict the activity to the other competency.
         $structure = \core_availability\tree::get_root_json([$this->get_competency_json($othercompetency)]);
         $this->set_availability($page->cmid, $course->id, $structure);
 
-        // Delete the first competency.
         \core_competency\api::delete_competency($competency);
 
-        /* The restriction must still be in place, regardless of whether the cleanup is enabled, as it does not
-           require the deleted competency. */
+        // Unchanged either way: the restriction names only the other competency.
         $this->assert_availability_unchanged($page->cmid, $structure);
     }
 
@@ -165,13 +156,11 @@ final class observer_test extends \advanced_testcase {
      * Tests that the condition is also removed from a nested subtree and that an emptied subtree is dropped.
      *
      * @dataProvider cleanup_enabled_provider
-     * @param bool $cleanupenabled Whether the cleanup kill switch is enabled.
+     * @param bool $cleanupenabled Whether the cleanup setting is enabled.
      */
     public function test_competency_condition_is_removed_from_nested_subtree(bool $cleanupenabled): void {
-        // Set the kill switch.
         $this->set_cleanup($cleanupenabled);
 
-        // Create the necessary data assets.
         $generator = $this->getDataGenerator();
         $course = $generator->create_course();
         $mixedpage = $generator->create_module('page', ['course' => $course->id]);
@@ -192,7 +181,6 @@ final class observer_test extends \advanced_testcase {
         $emptystructure = \core_availability\tree::get_root_json([$emptynested]);
         $this->set_availability($emptypage->cmid, $course->id, $emptystructure);
 
-        // Delete the competency.
         \core_competency\api::delete_competency($competency);
 
         if ($cleanupenabled) {
@@ -215,26 +203,22 @@ final class observer_test extends \advanced_testcase {
      * Tests that the cleanup also covers restrictions placed on course sections.
      *
      * @dataProvider cleanup_enabled_provider
-     * @param bool $cleanupenabled Whether the cleanup kill switch is enabled.
+     * @param bool $cleanupenabled Whether the cleanup setting is enabled.
      */
     public function test_competency_condition_is_removed_from_section(bool $cleanupenabled): void {
         global $DB;
 
-        // Set the kill switch.
         $this->set_cleanup($cleanupenabled);
 
-        // Create the necessary data assets.
         $generator = $this->getDataGenerator();
         $course = $generator->create_course(['numsections' => 1], ['createsections' => true]);
         $competency = $this->create_competency();
         $sectionid = (int)$DB->get_field('course_sections', 'id', ['course' => $course->id, 'section' => 1]);
 
-        // Restrict the section to the competency only.
         $structure = \core_availability\tree::get_root_json([$this->get_competency_json($competency)]);
         $DB->set_field('course_sections', 'availability', json_encode($structure), ['id' => $sectionid]);
         rebuild_course_cache($course->id, true);
 
-        // Delete the competency.
         \core_competency\api::delete_competency($competency);
 
         $availability = $DB->get_field('course_sections', 'availability', ['id' => $sectionid]);
@@ -261,7 +245,9 @@ final class observer_test extends \advanced_testcase {
     }
 
     /**
-     * Builds the JSON structure of an availability_competency condition, as the editing form would save it.
+     * Builds a stored competency condition requiring proficiency in the given competency.
+     *
+     * It carries no scope, like a condition saved before 1.2.0; the observer matches type and competency ID only.
      *
      * @param int $competencyid The competency ID which the condition requires.
      * @return \stdClass The condition structure.
@@ -275,7 +261,7 @@ final class observer_test extends \advanced_testcase {
     }
 
     /**
-     * Enables or disables the cleanup kill switch on the plugin settings.
+     * Enables or disables the cleanup of restrictions on competency deletion.
      *
      * @param bool $cleanupenabled Whether the cleanup should be enabled.
      */

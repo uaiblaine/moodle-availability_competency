@@ -25,7 +25,10 @@
 namespace availability_competency;
 
 /**
- * Unit tests for availability_competency.
+ * Basic tests of the condition's constructor and save().
+ *
+ * Coverage is declared in this docblock rather than with a CoversClass attribute because the
+ * plugin still supports Moodle 4.5, whose moodle-cs cannot see PHP attributes.
  *
  * @covers \availability_competency\condition
  */

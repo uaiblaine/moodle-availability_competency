@@ -17,7 +17,7 @@
 namespace availability_competency;
 
 /**
- * Availability competency - Frontend class
+ * Supplies the availability form with the competencies a restriction can name.
  *
  * @package    availability_competency
  * @copyright 2026 Anderson Blaine (anderson@blaine.com.br)
@@ -46,12 +46,12 @@ class frontend extends \core_availability\frontend {
     }
 
     /**
-     * Function to initialize the params for the javascript array.
+     * Parameters of the YUI form's initInner().
      *
-     * The YUI form receives, in this order: the competencies linked to the course, which are the
-     * only ones offered for a new restriction; the competencies this item's stored conditions name
-     * but which are no longer linked, so that editing the item keeps them instead of losing them;
-     * and the CSS class of a select on this Moodle branch.
+     * In this order: the competencies linked to the course, which are the only ones offered for a
+     * new restriction; the competencies this item's stored conditions name but which are no longer
+     * linked, so that editing the item keeps them instead of losing them; and the CSS class of a
+     * select on this Moodle branch.
      *
      * @param \stdClass $course
      * @param \cm_info|null $cm

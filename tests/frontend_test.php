@@ -43,7 +43,7 @@ final class frontend_test extends \advanced_testcase {
     }
 
     /**
-     * The form offers the competencies linked to the course, alphabetically, as a JSON array.
+     * The form offers the competencies linked to the course, in natural order ("Comp 2" before "Comp 10"), as a JSON array.
      */
     public function test_options_are_the_linked_competencies_in_alphabetical_order(): void {
         $course = $this->getDataGenerator()->create_course();
@@ -76,6 +76,8 @@ final class frontend_test extends \advanced_testcase {
 
     /**
      * Editing an item offers the competencies its conditions name but the course no longer links.
+     *
+     * Nested conditions count, and a competency that no longer exists comes with a null name.
      */
     public function test_stored_competencies_not_linked_are_offered(): void {
         global $DB;

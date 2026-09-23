@@ -27,7 +27,7 @@
  */
 class availability_competency_generator extends component_generator_base {
     /**
-     * Generator for availability_competency plugin.
+     * Resets the generator's state between tests.
      */
     public function reset(): void {
         // Nothing to reset.

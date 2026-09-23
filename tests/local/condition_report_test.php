@@ -112,7 +112,7 @@ final class condition_report_test extends \advanced_testcase {
      *
      * @param int $competencyid Competency ID.
      * @param int $proficient 1 when proficiency is required, 0 when its absence is.
-     * @param string $scope Scope of the rating.
+     * @param string $scope Scope of the rating, 'course' or 'global'.
      * @return \stdClass
      */
     protected function condition(int $competencyid, int $proficient = 1, string $scope = 'course'): \stdClass {

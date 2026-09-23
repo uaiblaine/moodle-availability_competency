@@ -17,7 +17,9 @@
 namespace availability_competency;
 
 /**
- * Availability competency - Condition class
+ * Condition on whether the user is, or is not, proficient in one competency.
+ *
+ * The rating read is the one given in the restricted item's course or the site-wide one, depending on the scope.
  *
  * @package    availability_competency
  * @copyright 2026 Anderson Blaine (anderson@blaine.com.br)

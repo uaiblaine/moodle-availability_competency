@@ -166,7 +166,8 @@ final class condition_test extends \advanced_testcase {
         $this->assertTrue($this->available($this->make_condition($competency, 1, 'course'), $course, $user->id));
         $this->assertTrue($this->available($this->make_condition($competency, 1, 'global'), $course, $user->id));
 
-        // Core never deletes a rated competency, so remove the record behind its back.
+        // Core refuses to delete a linked or rated competency (competency::can_all_be_deleted()),
+        // so remove the record directly.
         $DB->delete_records('competency', ['id' => $competency]);
         condition::wipe_static_cache();
 
@@ -341,7 +342,7 @@ final class condition_test extends \advanced_testcase {
     }
 
     /**
-     * The constructor requires the competency and requirement and accepts only known scopes.
+     * The constructor requires competencyid (0 or more) and proficient, accepts only known scopes and reads no scope as course.
      */
     public function test_constructor_and_save(): void {
         $legacy = new condition((object)['type' => 'competency', 'competencyid' => 7, 'proficient' => 1]);
