@@ -38,22 +38,22 @@ class availability_competency_generator extends component_generator_base {
      *
      * Adapted from the data generator of availability_competencies by ssystems GmbH.
      *
-     * @param array $data 'cmid' and 'competencyid'; optionally 'proficient' (1 by default) and 'scope' ('course' by default).
+     * @param array $data 'cmid' and 'competencyid'; optionally 'proficient' (1 by default) and 'scope'. Without a
+     *     scope the condition has the shape saved before 1.2.0, which reads the course rating.
      */
     public function create_activity_restriction(array $data): void {
         global $CFG, $DB;
         require_once($CFG->dirroot . '/course/lib.php');
 
-        $proficient = ($data['proficient'] ?? '') === '' ? 1 : (int)$data['proficient'];
-        $scope = ($data['scope'] ?? '') === '' ? 'course' : $data['scope'];
-        $tree = \core_availability\tree::get_root_json([
-            (object)[
-                'type' => 'competency',
-                'competencyid' => (int)$data['competencyid'],
-                'proficient' => $proficient ? 1 : 0,
-                'scope' => $scope,
-            ],
-        ]);
+        $condition = [
+            'type' => 'competency',
+            'competencyid' => (int)$data['competencyid'],
+            'proficient' => ($data['proficient'] ?? '') === '' || (int)$data['proficient'] ? 1 : 0,
+        ];
+        if (($data['scope'] ?? '') !== '') {
+            $condition['scope'] = $data['scope'];
+        }
+        $tree = \core_availability\tree::get_root_json([(object)$condition]);
 
         $courseid = $DB->get_field('course_modules', 'course', ['id' => $data['cmid']], MUST_EXIST);
         $DB->set_field('course_modules', 'availability', json_encode($tree), ['id' => $data['cmid']]);

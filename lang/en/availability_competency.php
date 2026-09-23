@@ -23,7 +23,7 @@
  */
 
 $string['cleanuponcompetencydeletion'] = 'Clean up restrictions on competency deletion';
-$string['cleanuponcompetencydeletion_desc'] = 'If enabled, all availability restrictions which name a particular competency are automatically removed from all activities and sections shortly after this competency is deleted, by a background task. This prevents activities and sections restricted to learners proficient in it from staying hidden from everyone due to an orphaned restriction which can never be fulfilled anymore.<br />If disabled, the restrictions remain in place and are shown as \'{$a}\' instead; nobody counts as proficient in a deleted competency, so a restriction requiring it stays closed and one requiring its absence is always met.';
+$string['cleanuponcompetencydeletion_desc'] = 'If enabled, when a competency is deleted, the restriction conditions on it that can never be met again are removed from all activities and sections shortly after, by a background task. This stops items restricted to learners proficient in the competency from staying unavailable forever. Conditions that the deleted competency now always meets, such as one requiring the learner not to be proficient, stay in place and are shown as \'{$a}\', because removing them could make an item unavailable. The task\'s log keeps the previous restriction of every item it changes.<br />If disabled, all restrictions stay in place and are shown as \'{$a}\'; nobody counts as proficient in a deleted competency, so a restriction requiring it stays closed and one requiring its absence is always met.';
 $string['competency'] = 'Course competency';
 $string['description'] = 'Require proficiency in a specified competency.';
 $string['error_selectcompetency'] = 'Select a competency.';

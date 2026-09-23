@@ -180,6 +180,29 @@ final class condition_test extends \advanced_testcase {
     }
 
     /**
+     * A condition saved before the scope option existed has no scope and keeps reading the course rating.
+     */
+    public function test_condition_saved_without_scope_reads_the_course_rating(): void {
+        global $DB;
+        $course = $this->getDataGenerator()->create_course();
+        $competency = $this->create_competency([$course->id]);
+        $courseonly = $this->getDataGenerator()->create_user();
+        $globalonly = $this->getDataGenerator()->create_user();
+        $this->rate_in_course($courseonly->id, $course->id, $competency, true);
+        $this->rate_globally($globalonly->id, $competency, true);
+
+        $page = $this->getDataGenerator()->create_module('page', ['course' => $course->id]);
+        $legacy = \core_availability\tree::get_root_json([
+            (object)['type' => 'competency', 'competencyid' => $competency, 'proficient' => 1],
+        ]);
+        $DB->set_field('course_modules', 'availability', json_encode($legacy), ['id' => $page->cmid]);
+        rebuild_course_cache($course->id, true);
+
+        $this->assertTrue(get_fast_modinfo($course, $courseonly->id)->get_cm($page->cmid)->available);
+        $this->assertFalse(get_fast_modinfo($course, $globalonly->id)->get_cm($page->cmid)->available);
+    }
+
+    /**
      * Guests see a restricted item as unavailable instead of the course page breaking.
      *
      * Goes through modinfo, which is the path a course page takes.

@@ -215,7 +215,7 @@ final class observer_test extends \advanced_testcase {
         $tasks = \core\task\manager::get_adhoc_tasks(task\remove_deleted_competency::class);
         $this->assertCount($cleanupenabled ? 1 : 0, $tasks);
 
-        $this->runAdhocTasks(task\remove_deleted_competency::class);
+        $this->run_cleanup_tasks();
         if ($cleanupenabled) {
             $this->assertNull($this->get_availability($page->cmid));
         } else {
@@ -324,13 +324,145 @@ final class observer_test extends \advanced_testcase {
     }
 
     /**
+     * Every operator, requirement and date outcome of a root tree [condition on the competency, date].
+     *
+     * The condition is removed exactly when it can never be met again, which depends on its requirement and
+     * on the negation its operator pushes down to it.
+     *
+     * @return array
+     */
+    public static function operator_provider(): array {
+        $cases = [];
+        $removed = [
+            '&' => [1 => true, 0 => false],
+            '|' => [1 => true, 0 => false],
+            '!&' => [1 => false, 0 => true],
+            '!|' => [1 => false, 0 => true],
+        ];
+        foreach ($removed as $op => $byproficient) {
+            foreach ($byproficient as $proficient => $expected) {
+                foreach (['date passed' => true, 'date ahead' => false] as $datelabel => $datepassed) {
+                    $cases["op {$op}, proficient {$proficient}, {$datelabel}"] = [$op, $proficient, $datepassed, $expected];
+                }
+            }
+        }
+        return $cases;
+    }
+
+    /**
+     * Tests that only conditions that can never be met again are removed, and that no learner loses access.
+     *
+     * @dataProvider operator_provider
+     * @param string $op Operator of the root tree.
+     * @param int $proficient 1 when the condition requires proficiency, 0 when it requires its absence.
+     * @param bool $datepassed Whether the date condition is met.
+     * @param bool $expectremoved Whether the competency condition should be removed.
+     */
+    public function test_only_unmeetable_conditions_are_removed(
+        string $op,
+        int $proficient,
+        bool $datepassed,
+        bool $expectremoved
+    ): void {
+        $this->set_cleanup(true);
+
+        $generator = $this->getDataGenerator();
+        $course = $generator->create_course();
+        $student = $generator->create_and_enrol($course, 'student');
+        $page = $generator->create_module('page', ['course' => $course->id]);
+        $competency = $this->create_competency();
+
+        $date = \availability_date\condition::get_json('>=', $datepassed ? time() - DAYSECS : time() + DAYSECS);
+        $structure = \core_availability\tree::get_root_json([$this->get_competency_json($competency, $proficient), $date], $op);
+        $this->set_availability($page->cmid, $course->id, $structure);
+
+        \core_competency\api::delete_competency($competency);
+        condition::wipe_static_cache();
+        $availablebefore = $this->is_available_to($course->id, $page->cmid, $student->id);
+
+        $this->run_cleanup_tasks();
+
+        $tree = json_decode($this->get_availability($page->cmid));
+        if ($expectremoved) {
+            $this->assertCount(1, $tree->c);
+            $this->assertEquals('date', $tree->c[0]->type);
+        } else {
+            $this->assert_availability_unchanged($page->cmid, $structure);
+        }
+        if ($availablebefore) {
+            $this->assertTrue($this->is_available_to($course->id, $page->cmid, $student->id));
+        }
+    }
+
+    /**
+     * Tests that negations accumulate through nested trees, as core pushes them down.
+     */
+    public function test_negation_accumulates_through_nested_trees(): void {
+        $this->set_cleanup(true);
+
+        $generator = $this->getDataGenerator();
+        $course = $generator->create_course();
+        $page = $generator->create_module('page', ['course' => $course->id]);
+        $competency = $this->create_competency();
+
+        // Under '!&' then '!|' the two negations cancel out: "proficient" fails and goes, emptying its subtree.
+        $nested = \core_availability\tree::get_nested_json(
+            [$this->get_competency_json($competency, 1)],
+            \core_availability\tree::OP_NOT_OR
+        );
+        $date = \availability_date\condition::get_json('>=', time());
+        $structure = \core_availability\tree::get_root_json([$nested, $date], \core_availability\tree::OP_NOT_AND);
+        $this->set_availability($page->cmid, $course->id, $structure);
+
+        $this->delete_competency($competency);
+
+        $tree = json_decode($this->get_availability($page->cmid));
+        $this->assertCount(1, $tree->c);
+        $this->assertEquals('date', $tree->c[0]->type);
+        $this->assertEquals('!&', $tree->op);
+    }
+
+    /**
+     * Tests that the task logs each changed item with its previous restriction.
+     */
+    public function test_task_logs_the_previous_restriction(): void {
+        $this->set_cleanup(true);
+
+        $generator = $this->getDataGenerator();
+        $course = $generator->create_course();
+        $page = $generator->create_module('page', ['course' => $course->id]);
+        $competency = $this->create_competency();
+        $structure = \core_availability\tree::get_root_json([$this->get_competency_json($competency)]);
+        $this->set_availability($page->cmid, $course->id, $structure);
+
+        $log = $this->delete_competency($competency);
+
+        $this->assertStringContainsString("changed course_modules id {$page->cmid} in course {$course->id}.", $log);
+        $this->assertStringContainsString('Previous availability: ' . json_encode($structure), $log);
+        $this->assertStringContainsString('New availability: none', $log);
+        $this->assertStringContainsString('1 item(s) changed.', $log);
+    }
+
+    /**
      * Deletes a competency through core's API and runs the cleanup task it may have queued.
      *
      * @param int $competencyid The competency ID.
+     * @return string What the task logged.
      */
-    protected function delete_competency(int $competencyid): void {
+    protected function delete_competency(int $competencyid): string {
         \core_competency\api::delete_competency($competencyid);
+        return $this->run_cleanup_tasks();
+    }
+
+    /**
+     * Runs the queued cleanup tasks.
+     *
+     * @return string What the tasks logged, captured because tests must not print.
+     */
+    protected function run_cleanup_tasks(): string {
+        ob_start();
         $this->runAdhocTasks(task\remove_deleted_competency::class);
+        return ob_get_clean();
     }
 
     /**
@@ -347,18 +479,20 @@ final class observer_test extends \advanced_testcase {
     }
 
     /**
-     * Builds a stored competency condition requiring proficiency in the given competency.
+     * Builds a stored competency condition on the given competency.
      *
-     * It carries no scope, like a condition saved before 1.2.0; the observer matches type and competency ID only.
+     * It carries no scope, like a condition saved before 1.2.0; the observer reads type, competency ID and
+     * proficient only.
      *
-     * @param int $competencyid The competency ID which the condition requires.
+     * @param int $competencyid The competency ID which the condition names.
+     * @param int $proficient 1 when proficiency is required, 0 when its absence is.
      * @return \stdClass The condition structure.
      */
-    protected function get_competency_json(int $competencyid): \stdClass {
+    protected function get_competency_json(int $competencyid, int $proficient = 1): \stdClass {
         return (object)[
             'type' => 'competency',
             'competencyid' => $competencyid,
-            'proficient' => 1,
+            'proficient' => $proficient,
         ];
     }
 
@@ -383,6 +517,19 @@ final class observer_test extends \advanced_testcase {
 
         $DB->set_field('course_modules', 'availability', json_encode($structure), ['id' => $cmid]);
         rebuild_course_cache($courseid, true);
+    }
+
+    /**
+     * Whether a course module is available to a user, evaluated afresh.
+     *
+     * @param int $courseid The course ID.
+     * @param int $cmid The course module ID.
+     * @param int $userid The user ID.
+     * @return bool
+     */
+    protected function is_available_to(int $courseid, int $cmid, int $userid): bool {
+        rebuild_course_cache($courseid, true);
+        return get_fast_modinfo($courseid, $userid)->get_cm($cmid)->available;
     }
 
     /**

@@ -52,6 +52,12 @@ All notable changes to this project will be documented in this file.
 - Behat: a data generator for activity restrictions, adapted from the one of
   ssystems-de/moodle-availability_competencies (ssystems GmbH), and a scenario checking that editing an
   activity keeps a restriction on a competency no longer linked to the course.
+- Behaviour change of the cleanup on competency deletion: it removes only the conditions on the deleted
+  competency that can never be met again (a "proficient" condition, or a "not proficient" one under a
+  "must not" group), taking the negation of enclosing groups into account. Conditions the deleted
+  competency now always meets stay: removing them, as 1.1.0 did, could make an item unavailable, for
+  example "not proficient in X, or date", open to everyone, became "date". The task's log keeps each
+  changed item's previous restriction. Restrictions already removed by 1.1.0 cannot be restored.
 - The cleanup of restrictions on a deleted competency now runs in an ad hoc task, one per competency,
   instead of scanning every activity and section inside the request that deleted it (a framework
   deletion fired one site-wide scan per competency). It also no longer drops a nested restriction set

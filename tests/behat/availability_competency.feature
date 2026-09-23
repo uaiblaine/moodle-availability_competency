@@ -65,3 +65,19 @@ Feature: Restrict access by competency proficiency
     And the field "Proficient" matches value "Yes – Global"
     And I press "Save and return to course"
     And I should see "You must be proficient in the competency Leadership (global proficiency)"
+
+  @javascript
+  Scenario: A restriction saved before the scope option keeps reading the course rating
+    Given the following "availability_competency > activity restrictions" exist:
+      | activity | competency | proficient |
+      | page1    | TW         | 1          |
+    When I am on the "Page 1" "page activity editing" page logged in as "teacher1"
+    And I expand all fieldsets
+    Then the field "Course competency" matches value "Teamwork"
+    And the field "Proficient" matches value "Yes – In this course"
+    And I press "Save and return to course"
+    And I should see "You must be proficient in the competency Teamwork in this course"
+    And I am on the "Course 1" "course" page logged in as "student1"
+    And I should not see "Not available unless"
+    And I am on the "Course 1" "course" page logged in as "student2"
+    And I should see "Not available unless"

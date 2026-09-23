@@ -46,7 +46,7 @@ There, you find a setting section:
 
 ### 1. Clean up restrictions on competency deletion
 
-With this setting, you can control whether the plugin automatically removes all availability restrictions which require a particular competency as soon as this competency is deleted. This prevents the affected activities and sections from staying hidden from everyone due to an orphaned restriction which can never be fulfilled anymore. As this cleanup changes existing availability restrictions in a way which can not be undone, it is disabled by default and has to be enabled explicitly on the plugin settings page. If it is disabled, an orphaned restriction remains in place and is shown as "(Competency missing)" instead.
+With this setting, you can control whether the plugin removes the restriction conditions on a competency that can never be met again once this competency is deleted. Nobody counts as proficient in a deleted competency, so a condition requiring proficiency in it would keep the affected activity or section unavailable forever; with the setting enabled, a background task removes such conditions shortly after the deletion. Conditions that the deleted competency now always meets, such as one requiring the learner not to be proficient, are left in place, because removing them could make an item unavailable. The task's log keeps the previous restriction of every item it changes, the only record of it, so this setting is disabled by default and has to be enabled explicitly on the plugin settings page. If it is disabled, every restriction on a deleted competency stays in place and is shown as "(Competency missing)".
 
 
 Finding restrictions that need attention

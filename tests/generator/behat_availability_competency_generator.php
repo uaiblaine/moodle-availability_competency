@@ -25,7 +25,7 @@
  *       | page1    | COMP1      | 1          | global |
  *
  * The activity is named by its idnumber and the competency by its idnumber. "proficient" defaults
- * to 1 and "scope" to "course".
+ * to 1. Without "scope" the condition has the shape saved before 1.2.0, which reads the course rating.
  *
  * Adapted from the Behat generator of availability_competencies by ssystems GmbH.
  *

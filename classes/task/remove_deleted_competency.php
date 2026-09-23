@@ -17,9 +17,10 @@
 namespace availability_competency\task;
 
 /**
- * Removes the restrictions on a deleted competency, for the optional cleanup setting.
+ * Removes the conditions on a deleted competency that can never be met again, for the optional cleanup setting.
  *
- * Queued by {@see \availability_competency\observer::competency_deleted()}, one task per competency.
+ * Queued by {@see \availability_competency\observer::competency_deleted()}, one task per competency. The task log
+ * keeps each changed item's previous restriction, the only way back since the change is not otherwise recorded.
  *
  * @package    availability_competency
  * @copyright  2026 Anderson Blaine (anderson@blaine.com.br)
@@ -36,7 +37,7 @@ class remove_deleted_competency extends \core\task\adhoc_task {
     }
 
     /**
-     * Removes the restrictions on the competency named in the custom data.
+     * Removes the conditions on the competency named in the custom data, logging every item it changes.
      *
      * A task without a competency ID can never succeed, so it logs and returns instead of throwing,
      * which would retry it forever.
@@ -50,6 +51,13 @@ class remove_deleted_competency extends \core\task\adhoc_task {
             mtrace('No competency ID given, nothing to remove.');
             return;
         }
-        \availability_competency\observer::remove_competency_from_availability($competencyid);
+
+        $changes = \availability_competency\observer::remove_competency_from_availability($competencyid);
+        foreach ($changes as $change) {
+            mtrace("Competency {$competencyid}: changed {$change->table} id {$change->id} in course {$change->courseid}.");
+            mtrace('  Previous availability: ' . $change->before);
+            mtrace('  New availability: ' . ($change->after ?? 'none'));
+        }
+        mtrace("Competency {$competencyid}: " . count($changes) . ' item(s) changed.');
     }
 }
