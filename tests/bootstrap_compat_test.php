@@ -36,7 +36,16 @@ final class bootstrap_compat_test extends \basic_testcase {
      * The form uses no Bootstrap 4 spacing names, which 5.x only keeps as deprecated styles.
      */
     public function test_no_bootstrap4_spacing_names(): void {
-        $this->assertDoesNotMatchRegularExpression('/\b[mp][lr]-(?:[0-5]|auto)\b/', $this->form_source());
+        $pattern = '/\b[mp][lr]-(?:(?:sm|md|lg|xl|xxl)-)?(?:[0-5]|auto)\b/';
+        // The pattern itself must catch the responsive forms and spare the Bootstrap 5 names.
+        foreach (['pr-3', 'ml-auto', 'ml-md-2', 'pr-lg-auto'] as $bootstrap4) {
+            $this->assertMatchesRegularExpression($pattern, $bootstrap4);
+        }
+        foreach (['pe-3', 'ms-auto', 'ms-md-2'] as $bootstrap5) {
+            $this->assertDoesNotMatchRegularExpression($pattern, $bootstrap5);
+        }
+
+        $this->assertDoesNotMatchRegularExpression($pattern, $this->form_source());
     }
 
     /**

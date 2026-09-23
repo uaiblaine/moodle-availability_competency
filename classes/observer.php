@@ -25,11 +25,13 @@ namespace availability_competency;
  */
 class observer {
     /**
-     * Removes the restrictions on a deleted competency from every item of the site, if the admin enabled it.
+     * Queues the removal of the restrictions on a deleted competency, if the admin enabled it.
      *
      * Nobody counts as proficient in a deleted competency, so a restriction requiring proficiency in it could
      * never be met again. Core fires this event once per removed competency, after the deletion is committed,
-     * including the competency's descendants and every competency of a deleted framework.
+     * including the competency's descendants and every competency of a deleted framework. Each removal scans
+     * every activity and section of the site, so it runs in an ad hoc task rather than in the request that
+     * deleted the competency.
      *
      * @param \core\event\competency_deleted $event The competency_deleted event.
      * @return void
@@ -40,7 +42,9 @@ class observer {
             return;
         }
 
-        self::remove_competency_from_availability((int)$event->objectid);
+        $task = new task\remove_deleted_competency();
+        $task->set_custom_data(['competencyid' => (int)$event->objectid]);
+        \core\task\manager::queue_adhoc_task($task, true);
     }
 
     /**
@@ -62,13 +66,13 @@ class observer {
      * Removes every reference to the given competency from the availability restrictions of all course modules and
      * course sections on the site.
      *
+     * Run by {@see task\remove_deleted_competency}.
+     *
      * @param int $competencyid The ID of the deleted competency.
      * @return void
      */
-    protected static function remove_competency_from_availability(int $competencyid): void {
-        global $CFG, $DB;
-
-        require_once($CFG->dirroot . '/course/lib.php');
+    public static function remove_competency_from_availability(int $competencyid): void {
+        global $DB;
 
         $affectedcourses = [];
 
@@ -123,7 +127,8 @@ class observer {
      *
      * Core has no API that removes one condition from a stored tree: the availability form rebuilds the whole
      * tree in the browser, and {@see \core_availability\info::update_dependency_id_across_course()} only remaps
-     * IDs. Nested subtrees which become empty are dropped as well, because core treats an empty subtree as met.
+     * IDs. A nested subtree which becomes empty through the removal is dropped as well, because core treats an
+     * empty subtree as met; a subtree that was already empty is left alone, as it does not name the competency.
      * Only a root tree with op '&' or '!|' carries showc, one flag per child of c, and it is kept parallel to c.
      *
      * The result is then checked by verify_competency_removal(). If that fails, which would be a bug, the
@@ -178,11 +183,9 @@ class observer {
             if (isset($child->c)) {
                 if (self::remove_competency_from_tree_recursive($child, $competencyid)) {
                     $changed = true;
-                }
-                // If the nested subtree does not hold any restriction anymore, we drop it completely.
-                if (empty($child->c)) {
-                    $changed = true;
-                    continue;
+                    if (empty($child->c)) {
+                        continue;
+                    }
                 }
                 $newchildren[] = $child;
                 if ($haveshowc) {

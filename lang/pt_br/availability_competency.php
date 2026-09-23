@@ -23,7 +23,7 @@
  */
 
 $string['cleanuponcompetencydeletion'] = 'Limpar restrições ao excluir competência';
-$string['cleanuponcompetencydeletion_desc'] = 'Se habilitado, todas as restrições de disponibilidade que citam uma determinada competência são removidas automaticamente de todas as atividades e seções assim que essa competência é excluída. Isso evita que atividades e seções restritas a quem é proficiente nela permaneçam ocultas para todos devido a uma restrição órfã que nunca mais poderá ser cumprida.<br />Se desabilitado, as restrições permanecem e são exibidas como \'{$a}\'; ninguém conta como proficiente numa competência excluída, então uma restrição que a exige continua fechada e uma que exige a sua ausência é sempre cumprida.';
+$string['cleanuponcompetencydeletion_desc'] = 'Se habilitado, todas as restrições de disponibilidade que citam uma determinada competência são removidas automaticamente de todas as atividades e seções logo depois que essa competência é excluída, por uma tarefa em segundo plano. Isso evita que atividades e seções restritas a quem é proficiente nela permaneçam ocultas para todos devido a uma restrição órfã que nunca mais poderá ser cumprida.<br />Se desabilitado, as restrições permanecem e são exibidas como \'{$a}\'; ninguém conta como proficiente numa competência excluída, então uma restrição que a exige continua fechada e uma que exige a sua ausência é sempre cumprida.';
 $string['competency'] = 'Competência do curso';
 $string['description'] = 'Requer proficiência em uma competência específica.';
 $string['error_selectcompetency'] = 'Selecione uma competência.';
@@ -40,4 +40,5 @@ $string['requires_competency'] = 'Você deve ser proficiente na competência <st
 $string['requires_competency_global'] = 'Você deve ser proficiente na competência <strong>{$a}</strong> (proficiência global)';
 $string['requires_not_competency'] = 'Você não deve ser proficiente na competência <strong>{$a}</strong> neste curso';
 $string['requires_not_competency_global'] = 'Você não deve ser proficiente na competência <strong>{$a}</strong> (proficiência global)';
+$string['task_remove_deleted_competency'] = 'Remover restrições de uma competência excluída';
 $string['title'] = 'Competência';

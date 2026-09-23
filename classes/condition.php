@@ -32,6 +32,15 @@ class condition extends \core_availability\condition {
     /** @var string Scope reading the learner's site-wide proficiency, whichever course or plan it came from. */
     const SCOPE_GLOBAL = 'global';
 
+    /** @var int Seconds a process reuses what it read; a web request never lives that long, a cron runner does. */
+    const STATIC_CACHE_LIFETIME = 60;
+
+    /** @var int Entries kept at most, so that a process evaluating many users does not grow without bound. */
+    const STATIC_CACHE_SIZE = 1000;
+
+    /** @var int Time the static caches were last emptied, from the core clock. */
+    protected static $cachestarted = 0;
+
     /** @var array Competency short names as competencyid => shortname, or false when there is no such competency. */
     protected static $competencynames = [];
 
@@ -133,6 +142,7 @@ class condition extends \core_availability\condition {
      * @return bool
      */
     protected function is_proficient(int $userid, int $courseid): bool {
+        self::expire_static_cache();
         if ($userid <= 0 || $this->get_competency_name() === false) {
             return false;
         }
@@ -223,6 +233,24 @@ class condition extends \core_availability\condition {
     }
 
     /**
+     * Empties the static caches once they are older than STATIC_CACHE_LIFETIME or hold STATIC_CACHE_SIZE entries.
+     *
+     * The observer only reaches the process in which a rating is given. A long-lived process, such as a cron
+     * runner working through several tasks, would otherwise keep a rating given meanwhile in another process
+     * out of sight for as long as it lives.
+     *
+     * @return void
+     */
+    protected static function expire_static_cache(): void {
+        $now = \core\di::get(\core\clock::class)->time();
+        $size = count(self::$competencynames) + count(self::$courseproficiencies) + count(self::$globalproficiencies);
+        if ($now - self::$cachestarted >= self::STATIC_CACHE_LIFETIME || $size >= self::STATIC_CACHE_SIZE) {
+            self::wipe_static_cache();
+            self::$cachestarted = $now;
+        }
+    }
+
+    /**
      * Obtains a string describing this restriction.
      *
      * @param bool $full Set true if this is the 'full information' view
@@ -231,6 +259,7 @@ class condition extends \core_availability\condition {
      * @return string Description of restriction
      */
     public function get_description($full, $not, \core_availability\info $info) {
+        self::expire_static_cache();
         $name = $this->get_competency_name();
         if ($name === false) {
             $name = get_string('missing', 'availability_competency');

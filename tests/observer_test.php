@@ -79,7 +79,7 @@ final class observer_test extends \advanced_testcase {
         $structure = \core_availability\tree::get_root_json([$this->get_competency_json($competency)]);
         $this->set_availability($page->cmid, $course->id, $structure);
 
-        \core_competency\api::delete_competency($competency);
+        $this->delete_competency($competency);
 
         if ($cleanupenabled) {
             // The whole restriction should be gone now.
@@ -113,7 +113,7 @@ final class observer_test extends \advanced_testcase {
         );
         $this->set_availability($page->cmid, $course->id, $structure);
 
-        \core_competency\api::delete_competency($competency);
+        $this->delete_competency($competency);
 
         if ($cleanupenabled) {
             // The date condition should remain, with its showc entry kept in sync.
@@ -145,10 +145,102 @@ final class observer_test extends \advanced_testcase {
 
         $structure = \core_availability\tree::get_root_json([$this->get_competency_json($othercompetency)]);
         $this->set_availability($page->cmid, $course->id, $structure);
+        // Control: a second page restricted by the deleted competency shows whether the cleanup ran.
+        $controlpage = $generator->create_module('page', ['course' => $course->id]);
+        $controlstructure = \core_availability\tree::get_root_json([$this->get_competency_json($competency)]);
+        $this->set_availability($controlpage->cmid, $course->id, $controlstructure);
+
+        $this->delete_competency($competency);
+
+        // Unchanged either way: the restriction names only the other competency.
+        $this->assert_availability_unchanged($page->cmid, $structure);
+        if ($cleanupenabled) {
+            $this->assertNull($this->get_availability($controlpage->cmid));
+        } else {
+            $this->assert_availability_unchanged($controlpage->cmid, $controlstructure);
+        }
+    }
+
+    /**
+     * Tests that a subtree which was already empty is kept, so that a tree not naming the competency stays as it was.
+     *
+     * Core treats an empty subtree as met, so under an OR it opens the item; dropping it would change access.
+     */
+    public function test_already_empty_subtree_is_kept(): void {
+        $this->set_cleanup(true);
+
+        $generator = $this->getDataGenerator();
+        $course = $generator->create_course();
+        $page = $generator->create_module('page', ['course' => $course->id]);
+        $controlpage = $generator->create_module('page', ['course' => $course->id]);
+        $competency = $this->create_competency();
+        $othercompetency = $this->create_competency();
+
+        $emptysubtree = \core_availability\tree::get_nested_json([]);
+        $structure = \core_availability\tree::get_root_json(
+            [$this->get_competency_json($othercompetency), $emptysubtree],
+            \core_availability\tree::OP_OR
+        );
+        $this->set_availability($page->cmid, $course->id, $structure);
+        // Control: shows that the cleanup ran.
+        $controlstructure = \core_availability\tree::get_root_json([$this->get_competency_json($competency)]);
+        $this->set_availability($controlpage->cmid, $course->id, $controlstructure);
+
+        $this->delete_competency($competency);
+
+        $this->assertNull($this->get_availability($controlpage->cmid));
+        $this->assert_availability_unchanged($page->cmid, $structure);
+    }
+
+    /**
+     * Tests that the cleanup runs in an ad hoc task, and only when the setting is enabled.
+     *
+     * @dataProvider cleanup_enabled_provider
+     * @param bool $cleanupenabled Whether the cleanup setting is enabled.
+     */
+    public function test_cleanup_runs_in_an_adhoc_task(bool $cleanupenabled): void {
+        $this->set_cleanup($cleanupenabled);
+
+        $generator = $this->getDataGenerator();
+        $course = $generator->create_course();
+        $page = $generator->create_module('page', ['course' => $course->id]);
+        $competency = $this->create_competency();
+        $structure = \core_availability\tree::get_root_json([$this->get_competency_json($competency)]);
+        $this->set_availability($page->cmid, $course->id, $structure);
 
         \core_competency\api::delete_competency($competency);
 
-        // Unchanged either way: the restriction names only the other competency.
+        // Nothing changes in the request that deleted the competency.
+        $this->assert_availability_unchanged($page->cmid, $structure);
+        $tasks = \core\task\manager::get_adhoc_tasks(task\remove_deleted_competency::class);
+        $this->assertCount($cleanupenabled ? 1 : 0, $tasks);
+
+        $this->runAdhocTasks(task\remove_deleted_competency::class);
+        if ($cleanupenabled) {
+            $this->assertNull($this->get_availability($page->cmid));
+        } else {
+            $this->assert_availability_unchanged($page->cmid, $structure);
+        }
+    }
+
+    /**
+     * Tests that a task without a competency ID finishes without touching any restriction.
+     *
+     * @covers \availability_competency\task\remove_deleted_competency
+     */
+    public function test_task_without_competency_does_nothing(): void {
+        $generator = $this->getDataGenerator();
+        $course = $generator->create_course();
+        $page = $generator->create_module('page', ['course' => $course->id]);
+        $competency = $this->create_competency();
+        $structure = \core_availability\tree::get_root_json([$this->get_competency_json($competency)]);
+        $this->set_availability($page->cmid, $course->id, $structure);
+
+        $task = new task\remove_deleted_competency();
+        $task->set_custom_data([]);
+        $this->expectOutputString("No competency ID given, nothing to remove.\n");
+        $task->execute();
+
         $this->assert_availability_unchanged($page->cmid, $structure);
     }
 
@@ -181,7 +273,7 @@ final class observer_test extends \advanced_testcase {
         $emptystructure = \core_availability\tree::get_root_json([$emptynested]);
         $this->set_availability($emptypage->cmid, $course->id, $emptystructure);
 
-        \core_competency\api::delete_competency($competency);
+        $this->delete_competency($competency);
 
         if ($cleanupenabled) {
             // Case 1: The nested subtree should now hold only the date condition, the root still two children.
@@ -219,7 +311,7 @@ final class observer_test extends \advanced_testcase {
         $DB->set_field('course_sections', 'availability', json_encode($structure), ['id' => $sectionid]);
         rebuild_course_cache($course->id, true);
 
-        \core_competency\api::delete_competency($competency);
+        $this->delete_competency($competency);
 
         $availability = $DB->get_field('course_sections', 'availability', ['id' => $sectionid]);
         if ($cleanupenabled) {
@@ -229,6 +321,16 @@ final class observer_test extends \advanced_testcase {
             // The restriction should still be in place.
             $this->assertEquals(json_encode($structure), $availability);
         }
+    }
+
+    /**
+     * Deletes a competency through core's API and runs the cleanup task it may have queued.
+     *
+     * @param int $competencyid The competency ID.
+     */
+    protected function delete_competency(int $competencyid): void {
+        \core_competency\api::delete_competency($competencyid);
+        $this->runAdhocTasks(task\remove_deleted_competency::class);
     }
 
     /**

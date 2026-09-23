@@ -271,6 +271,42 @@ final class condition_test extends \advanced_testcase {
     }
 
     /**
+     * A long-lived process, such as a cron runner, reads the ratings again once its cache is old enough.
+     */
+    public function test_long_lived_process_reads_ratings_again(): void {
+        $clock = $this->mock_clock_with_frozen();
+        $course = $this->getDataGenerator()->create_course();
+        $competency = $this->create_competency([$course->id]);
+        $user = $this->getDataGenerator()->create_user();
+        $condition = $this->make_condition($competency, 1, 'course');
+        $this->assertFalse($this->available($condition, $course, $user->id));
+
+        // A rating given in another process: the generator stores it without the event this process would observe.
+        $this->rate_in_course($user->id, $course->id, $competency, true);
+        $this->assertFalse($this->available($condition, $course, $user->id));
+
+        $clock->bump(condition::STATIC_CACHE_LIFETIME);
+        $this->assertTrue($this->available($condition, $course, $user->id));
+    }
+
+    /**
+     * The ratings a process keeps are capped, however many users it evaluates.
+     */
+    public function test_static_cache_is_bounded(): void {
+        $course = $this->getDataGenerator()->create_course();
+        $competency = $this->create_competency([$course->id]);
+        $condition = $this->make_condition($competency, 1, 'course');
+
+        // Users do not have to exist: a user without ratings is not proficient.
+        for ($userid = 1; $userid <= condition::STATIC_CACHE_SIZE + 10; $userid++) {
+            $this->available($condition, $course, $userid);
+        }
+
+        $cached = new \ReflectionProperty(condition::class, 'courseproficiencies');
+        $this->assertLessThanOrEqual(condition::STATIC_CACHE_SIZE, count($cached->getValue()));
+    }
+
+    /**
      * A rating given earlier in the same request is seen by the next evaluation.
      *
      * @covers \availability_competency\observer::competency_evidence_created

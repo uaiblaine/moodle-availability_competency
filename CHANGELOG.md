@@ -52,6 +52,12 @@ All notable changes to this project will be documented in this file.
 - Behat: a data generator for activity restrictions, adapted from the one of
   ssystems-de/moodle-availability_competencies (ssystems GmbH), and a scenario checking that editing an
   activity keeps a restriction on a competency no longer linked to the course.
+- The cleanup of restrictions on a deleted competency now runs in an ad hoc task, one per competency,
+  instead of scanning every activity and section inside the request that deleted it (a framework
+  deletion fired one site-wide scan per competency). It also no longer drops a nested restriction set
+  that was already empty, which changed the access of items that never named the deleted competency.
+- Ratings read during a request are kept for at most a minute and a thousand entries, so a long-lived
+  process such as a cron runner sees ratings given meanwhile in another process.
 - Tests: the condition is now tested against the database (scopes, unlinking, disabled competencies,
   missing competencies, guests, capability overrides, restore, duplication), plus the frontend, a
   Behat scenario for the form and a check of the form's Bootstrap class names. Wiping the static

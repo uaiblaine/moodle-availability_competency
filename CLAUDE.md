@@ -71,13 +71,18 @@ mdl purge m501                                   # after PHP changes affecting o
 classes/condition.php    the condition itself (is_available, get_description)
 classes/frontend.php     feeds the YUI availability form UI with its options
 classes/observer.php     reacts to competency events (db/events.php)
+classes/task/            ad hoc task running the optional cleanup on deletion
+classes/local/           condition_report, behind the CLI report
 classes/privacy/         null_provider
+cli/report_conditions.php  read-only report of restrictions with no usable competency
 settings.php             admin settings
 yui/src, yui/build       the form-side widget — core's availability UI is YUI,
                          not AMD, so this is the exception to the fleet's
                          "no YUI in new code" rule; rebuild yui/build with the
                          core shifter, never hand-edit it
-tests/                   condition, observer and integration tests
+tests/                   condition, frontend, observer, Bootstrap class and
+                         report (tests/local/) tests, Behat features and the
+                         "activity restrictions" Behat generator
 ```
 
 ## Design decisions (owner, 2026-09-23)
@@ -116,7 +121,10 @@ Checked against core on 4.5 and 5.2 (2026-09-23):
 ## Rebuilding the YUI module
 
 `mdl grunt` refuses a plugin without `amd/src`, so run core's grunt directly (eslint at CI
-strictness, then shifter), and commit `yui/build` with the source change:
+strictness, then shifter), and commit `yui/build` with the source change. This holds for a
+comment-only edit too: shifter copies the source comments into the `.js` and `-debug.js` builds,
+so the grunt gate fails on a stale build.
+
 
 ```sh
 docker run --rm -v ~/dev/moodle-502:/app \
