@@ -138,14 +138,14 @@ This plugin does not add any capabilities. Whoever can edit an activity's or sec
 Requirements
 ------------
 
-- Moodle 4.5 or later (tested up to Moodle 5.2)
+- Moodle 4.5 or later (tested up to Moodle 5.3)
 - Core competencies enabled (`tool_lp`)
 
 
 Moodle release support
 ----------------------
 
-This plugin is maintained for Moodle 4.5 LTS up to Moodle 5.2 from a single branch. The restriction form uses the select style of each Moodle release (Bootstrap 4 on 4.5, Bootstrap 5 from 5.0).
+This plugin is maintained for Moodle 4.5 LTS up to Moodle 5.3 from a single branch. The restriction form uses the select style of each Moodle release (Bootstrap 4 on 4.5, Bootstrap 5 from 5.0).
 
 
 Installation

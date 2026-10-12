@@ -3,7 +3,7 @@
 `availability_competency` is a Moodle availability condition ("Competency"). It restricts
 access to an activity or a course section until the learner is, or is not, proficient in one
 competency, read from the learner's course rating or from the site-wide rating. It supports
-Moodle 4.5 through 5.2 on one branch. **It defines no database tables, capabilities, web
+Moodle 4.5 through 5.3 on one branch. **It defines no database tables, capabilities, web
 services or page scripts**: the condition is stored as JSON in core's
 `course_modules.availability` and `course_sections.availability`, and the ratings it reads
 belong to core competencies.
