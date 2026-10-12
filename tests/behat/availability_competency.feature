@@ -54,6 +54,13 @@ Feature: Restrict access by competency proficiency
     And I am on the "Course 1" "course" page logged in as "student2"
     And I should see "Not available unless"
 
+  Scenario: A learner opening the restricted activity directly reads the restriction
+    Given the following "availability_competency > activity restrictions" exist:
+      | activity | competency | proficient |
+      | page1    | TW         | 1          |
+    When I am on the "Page 1" "page activity" page logged in as "student2"
+    Then I should see "You must be proficient in the competency Teamwork in this course" in the "region-main" "region"
+
   @javascript
   Scenario: Editing an activity keeps a restriction on a competency no longer linked to the course
     Given the following "availability_competency > activity restrictions" exist:
