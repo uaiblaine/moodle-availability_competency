@@ -9,8 +9,8 @@ Plugin context: a Moodle **availability condition** plugin ("Competency") that
 restricts access to an activity or a course section until the learner has
 reached a given proficiency in one or more competencies. It owns **no database
 tables** and implements `null_provider`; state comes from core competencies.
-Supports Moodle **4.5 through 5.2** (`$plugin->requires = 2024100700`,
-`$plugin->supported = [405, 502]`), mounted at
+Supports Moodle **4.5 through 5.3** (`$plugin->requires = 2024100700`,
+`$plugin->supported = [405, 503]`), mounted at
 `availability/condition/competency` (see `~/dev/moodle-dev/plugins.conf`).
 
 ## Agent orchestration budget (fleet rule, repeated here on purpose)
@@ -142,7 +142,7 @@ reviews).
   key it names; an invalid file stops reviews for the repository until it is fixed, and an
   unknown key only raises a warning on the summary comment.
 - **One Moodle version per repository.** There is no per-branch mapping, so the file pins
-  `moodle.versions: ["5.2"]`. The plugin also runs on older cores, so read a finding about a core API with that in mind.
+  `moodle.versions: ["5.3"]`. The plugin also runs on older cores, so read a finding about a core API with that in mind.
 - `fail_on.severity` is `high`: the check fails on an open finding at or above it. Code
   quality findings never block, only security findings do.
 - The context file is project knowledge that **influences** the reviewer and is not a

@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.1]
+
+- Support Moodle 5.3; CI runs the full matrix on 5.3.
+- A Behat scenario opens a restricted activity directly as a learner who does not meet the
+  restriction. `require_login()` builds the restriction description before it sets the page
+  context, which is why the competency name is formatted late (in core's `info::format_info()`) and
+  never with `format_string()` in `get_description()`; a `format_string()` there raises the
+  "$PAGE->context was not set" debugging notice. The same defect was fixed in
+  moodle-an-hochschulen/moodle-availability_cohort (issue #22); this plugin has avoided it since
+  1.2.0.
+
 ## [1.2.0]
 
 ### Upgrading from 1.0.x or 1.1.0
