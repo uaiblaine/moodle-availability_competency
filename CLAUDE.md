@@ -66,8 +66,16 @@ yui/src, yui/build       the form-side widget — core's availability UI is YUI,
                          core shifter, never hand-edit it
 tests/                   condition, frontend, observer, Bootstrap class and
                          report (tests/local/) tests, Behat features and the
-                         "activity restrictions" Behat generator
+                         "activity restrictions" Behat generator; the plugins
+                         directory readiness test (fleet template) and the
+                         upstream copyright test
+mutations/gates.conf     mutation spec of the readiness and credit guards
 ```
+
+`lang/pt_br` is export-ignored: only English ships, translations reach sites through AMOS.
+Files adapted from availability_cohort and availability_competencies keep their holders'
+`@copyright` lines; `tests/upstream_credits_test.php` lists them, so add a file there when
+adapting more code.
 
 ## Design decisions (owner, 2026-09-23)
 

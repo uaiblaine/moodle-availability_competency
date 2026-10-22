@@ -30,6 +30,12 @@ namespace availability_competency;
  * Coverage is declared in this docblock rather than with a CoversClass attribute because the
  * plugin still supports Moodle 4.5, whose moodle-cs cannot see PHP attributes.
  *
+ * The cleanup tests are adapted from the observer tests of availability_cohort by
+ * moodle-an-hochschulen e.V., whose copyright line is kept below.
+ *
+ * @copyright  2026 Anderson Blaine (anderson@blaine.com.br)
+ * @copyright  2026 Moodle an Hochschulen e.V. <kontakt@moodle-an-hochschulen.de>
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @covers \availability_competency\observer
  */
 final class observer_test extends \advanced_testcase {
