@@ -46,6 +46,8 @@ There, you find a setting section:
 
 ### 1. Clean up restrictions on competency deletion
 
+Stored as `availability_competency/cleanuponcompetencydeletion`.
+
 Nobody can be proficient in a deleted competency: a condition requiring proficiency in it can never be met again, while one requiring the learner not to be proficient is always met. With this setting enabled, a background task removes the conditions that can never be met, shortly after the deletion, so that they no longer block access; the others stay and are shown as "(Competency missing)". The task's log keeps the previous restriction of each item it changes, the only record of it, so the setting is disabled by default. If it is disabled, nothing is removed.
 
 
@@ -139,7 +141,9 @@ Requirements
 ------------
 
 - Moodle 4.5 or later (tested up to Moodle 5.3)
-- Core competencies enabled (`tool_lp`)
+- Competencies enabled on the site (Site administration -> Advanced features -> Enable competencies) to add a restriction; restrictions already saved keep being evaluated while they are disabled
+
+The plugin declares no dependency on another plugin.
 
 
 Moodle release support
@@ -184,16 +188,23 @@ Please create pull requests on Github:
 https://github.com/uaiblaine/moodle-availability_competency/pulls
 
 
-Translating this plugin
------------------------
+Translations
+------------
 
-This Moodle plugin is shipped with English language pack by default. All translations into other languages must be managed through AMOS (https://lang.moodle.org) by which they will become part of Moodle's official language pack.
+The English strings ship in the package. The Brazilian Portuguese translation is maintained in this repository (`lang/pt_br`) and reaches sites through [AMOS](https://lang.moodle.org/), as the plugins directory requires; it is left out of the release package.
 
 
-Privacy
--------
+Data stored
+-----------
 
-This plugin does not store any persistent personal profile data. It only reads competency framework data and user proficiency information from Moodle's core competency system.
+The plugin creates no database tables and stores no personal data; its privacy provider declares exactly that.
+
+- Each restriction is kept by core in the `availability` column of `course_modules` or `course_sections`, as JSON naming the competency ID, the requirement and the scope. It stays as long as the activity or section and its restriction do, and goes when either is deleted or the restriction is removed.
+- The setting is stored in `config_plugins`.
+- When "Clean up restrictions on competency deletion" is enabled, each deletion of a competency queues one ad hoc task, which holds only the competency ID and is removed by core once it has run. Its output, which core's task logging keeps for the task log retention period (Site administration -> Server -> Tasks -> Task log configuration, 28 days by default), records the previous and the new restriction of every item it changed, and nothing about users.
+- To evaluate a restriction, the plugin reads learners' ratings from core's competency tables (`competency_usercompcourse` for "In this course", `competency_usercomp` for "Global") and keeps them only in the memory of the PHP process, for at most 60 seconds; nothing is written to a cache store or the database.
+
+A data request therefore exports nothing from this plugin, and a deletion request has nothing of the plugin's to delete. The ratings belong to core's competency subsystem, whose own privacy provider exports and deletes them.
 
 
 Contributors
@@ -216,10 +227,12 @@ Several ideas in this plugin come from [moodle-availability_competencies](https:
 - in the tests, wiping the condition's static cache in setUp() and creating the backup_ids temporary table to test restores;
 - the Behat data generator for activity restrictions, adapted from theirs.
 
-The optional cleanup of restrictions when a competency is deleted is ported from [moodle-availability_cohort](https://github.com/moodle-an-hochschulen/moodle-availability_cohort) by moodle-an-hochschulen e.V.
+The optional cleanup of restrictions when a competency is deleted, and its tests, are adapted from [moodle-availability_cohort](https://github.com/moodle-an-hochschulen/moodle-availability_cohort) by moodle-an-hochschulen e.V. (Alexander Bias), also licensed under the GNU GPL v3 or later.
 
 
 Copyright
 ---------
 
-The copyright of this plugin is held by Anderson Blaine.
+The copyright of this plugin is held by Anderson Blaine. The code adapted from the plugins named under "Credits" keeps the copyright of its holders, named in the files it went into: Alexander Bias, ssystems GmbH (the test data generators) and Alexander Bias and Moodle an Hochschulen e.V. (the cleanup on competency deletion and its tests).
+
+This plugin is licensed under the [GNU GPL v3 or later](http://www.gnu.org/copyleft/gpl.html); the full text is in `LICENSE`.

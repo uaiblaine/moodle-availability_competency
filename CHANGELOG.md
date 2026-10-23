@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.2]
+
+Brings the package to the Moodle plugins directory submission guidelines; no change in behaviour.
+
+- The package carries `LICENSE` beside `COPYING.txt`, both the GNU GPL v3 text.
+- Only English strings ship: `lang/pt_br` stays in the repository and reaches sites through AMOS.
+- The code adapted from availability_cohort (the cleanup on competency deletion and its tests) and
+  from availability_competencies (the test data generator) keeps its holders' copyright lines.
+- README: a "Data stored" section (no tables and no personal data; what core keeps for a
+  restriction and for the cleanup task), the setting's stored name, the requirements and a
+  "Translations" section.
+- Tests: `tests/marketplace_readiness_test.php` pins the licence files, the English-only package,
+  data-only lang files, setting names, the boilerplate and the privacy cover of core rows;
+  `tests/upstream_credits_test.php` pins the upstream copyright lines. Mutation spec in `mutations/`.
+
 ## [1.2.1]
 
 - Support Moodle 5.3; CI runs the full matrix on 5.3.

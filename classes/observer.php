@@ -19,8 +19,12 @@ namespace availability_competency;
 /**
  * Observers of core competency events, registered in db/events.php.
  *
+ * The cleanup after a competency is deleted is adapted from the cleanup after a cohort is deleted in
+ * availability_cohort by moodle-an-hochschulen e.V., whose copyright line is kept below.
+ *
  * @package    availability_competency
  * @copyright 2026 Anderson Blaine (anderson@blaine.com.br)
+ * @copyright 2026 Alexander Bias <bias@alexanderbias.de>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class observer {
